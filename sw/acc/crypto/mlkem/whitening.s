@@ -3,11 +3,14 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 /*
+ * Name: whitening
+ *
  * Constant-time whitening step for NTT, INTT and pair-pointwise multiplication.
  *
  * clobbered registers: w0 to w15, w17 to w25
- * clobbered flag groups: none
+ * clobbered flag groups: FG0
  */
+
 .globl whitening
 .type whitening, @function
 whitening:
