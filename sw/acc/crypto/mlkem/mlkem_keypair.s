@@ -110,24 +110,21 @@ _pk_len_k2:
     addi s0, x0, 800
 
 _continue:
-    srli t0, s0, 5
-    la   t1, dptr_sk
-    lw   t1, 0(t1)
-    la   t2, dptr_pk
-    lw   t2, 0(t2)
-    loop t0, 2
-      bn.lid x0, 0(t2++)
-      bn.sid x0, 0(t1++)
-    endloop
-
-    /* Compute H(pk). */
+    /* Copy pk to sk and compute H(pk). */
     la      t0, dptr_pk
     lw      a0, 0(t0)
-    add     a1, x0, s0
-    slli    t0, a1, 5
+    slli    t0, s0, 5
     addi    t0, t0, SHA3_256_CFG
     csrrw   x0, kmac_cfg, t0
-    jal     x1, keccak_send_message
+
+    la      t1, dptr_sk
+    lw      t1, 0(t1)
+    srli    s0, s0, 5
+    loop s0, 3
+        bn.lid  x0, 0(a0++)
+        bn.sid  x0, 0(t1++)
+        bn.wsrw kmac_msg, w0
+    endloop
     bn.wsrr w0, kmac_digest
     bn.sid  x0, 0(t1++)
 

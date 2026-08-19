@@ -300,9 +300,8 @@ _continue:
 	lw   a0, 0(t0)
 	la   t0, ctbytes
 	lw   t0, 0(t0)
-	add  a1, x0, t0
+	srli t0, t0, 5
 #ifdef HARDENED
-	srli t0, a1, 5
 	loop t0, 3
 		bn.lid  x0, 0(a0++)
 		bn.wsrw kmac_msg, w0
@@ -316,8 +315,10 @@ _continue:
 	bn.wsrr w0, kmac_digest1
 	bn.sid  x0, 0(t0)
 #else
-	jal  x1, keccak_send_message
-	/* output buffer */
+    loop t0, 2
+        bn.lid  x0, 0(a0++)
+        bn.wsrw kmac_msg, w0
+    endloop
 	la      t0, ss_false
 	bn.wsrr w0, kmac_digest
 	bn.sid  x0, 0(t0)

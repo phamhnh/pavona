@@ -85,23 +85,24 @@ _continue:
   add s1, a1, x0
 
   /* Compute H(pk). */
-  add     a0, a1, x0 /* a1 = ptr_pk */
-  add     a1, t0, x0
-  slli    t0, a1, 5
-  addi    t0, t0, SHA3_256_CFG
-  csrrw   x0, kmac_cfg, t0
-  jal     x1, keccak_send_message
+  slli    t1, t0, 5
+  addi    t1, t1, SHA3_256_CFG
+  csrrw   x0, kmac_cfg, t1
+  srli    t0, t0, 5
+  loop t0, 2
+    bn.lid  x0, 0(a1++)
+    bn.wsrw kmac_msg, w0
+  endloop
   bn.wsrr w1, kmac_digest
 
   /* Compute hash_g(coins||H(pk)). ***/
-  addi  a1, x0, 64
-  slli  t0, a1, 5
+  addi  t0, x0, 64
+  slli  t0, t0, 5
   addi  t0, t0, SHA3_512_CFG
   csrrw x0, kmac_cfg, t0
 
   /* Send the message. */
-  add     t0, s0, x0
-  bn.lid  x0, 0(t0)
+  bn.lid  x0, 0(s0)
   bn.wsrw kmac_msg, w0
   bn.wsrw kmac_msg, w1
 
