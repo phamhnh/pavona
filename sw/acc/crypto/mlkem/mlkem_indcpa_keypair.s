@@ -54,20 +54,27 @@
 /* Config to start a SHA3_512 operation. */
 #define SHA3_512_CFG 0x10
 
-/*
- * Name:        indcpa_keypair
+/**
+ * Key generation for the CPA-secure public-key encryption scheme underlying
+ * ML-KEM.
  *
- * Description: Generates public and private key for the CPA-secure
- *              public-key encryption scheme underlying Kyber
+ * Expand the seed into the matrix A and the noise polynomials s and e, compute
+ * the public key t = A * s + e in NTT domain, and write both keys out in
+ * packed form.
  *
- * Flags: Clobbers FG0, has no meaning beyond the scope of this subroutine.
+ * @param[in]  x10: dmem pointer to the input seed
+ *                  (KYBER_SYMBYTES = 32 bytes)
+ * @param[out] x11: dmem pointer to the output packed public key
+ * @param[out] x12: dmem pointer to the output packed secret key
+ * @param[in]  x13: k, the security level
  *
- * @param[in]  x10 (a0): pointer to seed (KYBER_SYMBYTES = 32)
- * @param[out] x11 (a1): dmem pointer to public key pk_addr
- * @param[out] x12 (a2): dmem pointer to secret key sk_addr
- * @param[in]  x13 (a3): k, the security level
+ * UNPROTECTED
+ * clobbered registers: x4 to x13, x18 to x28, w0 to w26, acc, acch, mod
+ * clobbered flag groups: FG0
  *
- * clobbered registers: a0-a4, t0-t5, w8, w16
+ * HARDENED
+ * clobbered registers: x2, x4 to x31, w0 to w30, acc, acch, mod
+ * clobbered flag groups: FG0
  */
 .globl indcpa_keypair
 .type indcpa_keypair, @function

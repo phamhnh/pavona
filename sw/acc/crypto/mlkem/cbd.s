@@ -9,15 +9,17 @@
 /* Config to start a SHAKE-256 operation. */
 #define SHAKE256_CFG 0xA
 
-/*
- * Name: poly_getnoise_eta_init
+/**
+ * Initialization of the SHAKE-256 operation for poly_getnoise_eta_{1,2}.
  *
- * Prepares for polynomial CBD sampling via either of
- * `poly_getnoise_eta_1` or `poly_getnoise_eta_2` given a seed and
- * a nonce by initializing a SHAKE256 operation.
+ * Configure a SHAKE-256 operation for a 33-byte message and absorb
+ * seed || nonce, so that a subsequent call to `poly_getnoise_eta_1` or
+ * `poly_getnoise_eta_2` can squeeze the bytes it samples from.
  *
- * @param[in]  x10: dmem pointer to input seed
- * @param[in]  x11: dmem pointer to nonce
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the input seed (32 bytes)
+ * @param[in]  x11: dmem pointer to the nonce (1 byte)
  *
  * clobbered registers: x5, w0
  * clobbered flag groups: none
@@ -41,17 +43,22 @@ poly_getnoise_eta_init:
   bn.wsrw kmac_msg, w0
   ret
 
-/*
- * Name: poly_getnoise_eta_1
+/**
+ * Sampling of a polynomial from the centered binomial distribution with
+ * parameter KYBER_ETA1.
  *
- * Sample a polynomial deterministically from a seed and a nonce,
- * with output polynomial close to centered binomial distribution
- * with parameter KYBER_ETA1; this function assumes
- * `poly_getnoise_eta_init` has been called first with the
- * appropriate seed and nonce.
+ * Deterministically sample a polynomial whose coefficients follow a centered
+ * binomial distribution with parameter eta = KYBER_ETA1, which is 3 for
+ * KYBER_K = 2 and 2 for KYBER_K = 3 and KYBER_K = 4. Dispatches to cbd3 or
+ * cbd2 accordingly, and assumes that `poly_getnoise_eta_init` has been called
+ * beforehand with the appropriate seed and nonce.
  *
- * @param[in]  x10: eta
- * @param[out] x11: dmem pointer to output polynomial
+ * On return, x11 has been advanced by one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[in]  x10: eta, either 2 or 3
+ * @param[out] x11: dmem pointer to the output polynomial
  *
  * clobbered registers: x4 to x5, x11, w0 to w11, w20 to w21
  * clobbered flag groups: FG0
@@ -69,17 +76,21 @@ _handle_cbd3:
   jal x1, cbd3
   ret
 
-/*
- * Name: poly_getnoise_eta_2
+/**
+ * Sampling of a polynomial from the centered binomial distribution with
+ * parameter KYBER_ETA2.
  *
- * Sample a polynomial deterministically from a seed and a nonce,
- * with output polynomial close to centered binomial distribution
- * with parameter KYBER_ETA2; this function assumes
- * `poly_getnoise_eta_init` has been called first with the
- * appropriate seed and nonce.
+ * Deterministically sample a polynomial whose coefficients follow a centered
+ * binomial distribution with parameter eta = KYBER_ETA2, and assume that
+ * `poly_getnoise_eta_init` has been called beforehand with the appropriate
+ * seed and nonce. Since KYBER_ETA2 = 2 for every parameter set, this routine
+ * always calls cbd2 and, unlike poly_getnoise_eta_1, takes no eta argument.
  *
- * @param[in]  x10: eta
- * @param[out] x11: dmem pointer to output polynomial
+ * On return, x11 has been advanced by one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[out] x11: dmem pointer to the output polynomial
  *
  * clobbered registers: x4 to x5, x11, w0 to w4, w6 to w8
  * clobbered flag groups: FG0
@@ -91,14 +102,18 @@ poly_getnoise_eta_2:
   jal x1, cbd2
   ret
 
-/*
- * Name: cbd2
+/**
+ * Centered binomial distribution with eta = 2 (KYBER_ETA2).
  *
- * Given an array of uniformly random bytes, compute
- * polynomial with coefficients distributed according to
- * a centered binomial distribution with parameter eta=2.
+ * Squeeze 128 uniformly random bytes and turn them into a polynomial with 256
+ * coefficients that follow a centered binomial distribution with parameter
+ * eta = 2, spending 4 bits per coefficient.
  *
- * @param[out] x11: dmem pointer to output polynomial
+ * On return, x11 has been advanced by one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[out] x11: dmem pointer to the output polynomial
  * @param[in]  kmac_digest: SHAKE-256 squeeze set up by poly_getnoise_eta_init
  * @param[in]  mod: q = 3329
  * @param[in]  w31: all-zero register
@@ -146,15 +161,19 @@ cbd2:
   endloop
   ret
 
-/*
- * Name: cbd3
+/**
+ * Centered binomial distribution with eta = 3 (KYBER_ETA1 for KYBER_K = 2).
  *
- * Given an array of uniformly random bytes, compute
- * polynomial with coefficients distributed according to
- * a centered binomial distribution with parameter eta=3.
- * This function is only needed for Kyber-512.
+ * Squeeze 192 uniformly random bytes and turn them into a polynomial with 256
+ * coefficients that follow a centered binomial distribution with parameter
+ * eta = 3, spending 6 bits per coefficient. Only KYBER_K = 2 uses eta = 3, so
+ * this routine is not needed for the other parameter sets.
  *
- * @param[out] x11: dmem pointer to output polynomial
+ * On return, x11 has been advanced by one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[out] x11: dmem pointer to the output polynomial
  * @param[in]  kmac_digest: SHAKE-256 squeeze set up by poly_getnoise_eta_init
  * @param[in]  mod: q = 3329
  * @param[in]  w31: all-zero register

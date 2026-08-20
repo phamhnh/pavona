@@ -10,14 +10,21 @@
 
 .text
 
-/*
- * Name: poly_decompress
+/**
+ * De-serialization and subsequent decompression of a polynomial for
+ * d in {4, 5}; approximate inverse of poly_compress.
  *
- * Return r such that x = Compressq(r, d) = round((2^d / q) * r) mod 2^d
- * for d in {4, 5}.
+ * Return r = Decompressq(x, d) = round((q / 2^d) * x), where d = 4 for
+ * k in {2, 3} and d = 5 for k = 4. This recovers the second ciphertext
+ * component v.
  *
- * @param[in]  x10: dmem pointer to input byte array
- * @param[out] x11: dmem pointer to output polynomial
+ * On return, x10 has been advanced by the 128 or 160 bytes consumed and x11 by
+ * one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the input byte array
+ * @param[out] x11: dmem pointer to the output polynomial
  * @param[in]  x12: k, the security level
  * @param[in]  w31: all-zero register
  *
@@ -180,15 +187,15 @@ _handle_k4_poly_decompress:
   endloop
   ret
 
-/*
- * Name: poly_decompress_k4
+/**
+ * Decompression of 16 coefficients with d = 5, for KYBER_K = 4; subroutine of
+ * poly_decompress.
  *
- * Subroutine of poly_decompress for decompressing 16 coefficients for KYBER_K = 4.
+ * This routine is constant time.
  *
- * @param[in]  w1: input vector with 16 d-bit compressed coefficients
- * @param[out] w1: output vector with 16 16-bit coefficients
- * @param[in]  w2: const_8
- * @param[in]  w31: all-zero
+ * @param[in,out] w1: input vector with 16 5-bit compressed coefficients, which
+ *                    is overwritten with the 16 16-bit output coefficients
+ * @param[in]     w2: const_8
  *
  * clobbered registers: w1, acc, acch
  * clobbered flag groups: none
@@ -202,14 +209,21 @@ poly_decompress_k4:
   bn.mulv.l.16h.acc.hi w1, w1, sw0.0 /* * q + acc(h) */
   ret
 
-/*
- * Name: poly_polyvec_decompress
+/**
+ * De-serialization and subsequent decompression of a polynomial for
+ * d in {10, 11}; approximate inverse of poly_polyvec_compress.
  *
- * Return r such that x = Compressq(r, d) = round((2^d / q) * r) mod 2^d
- * for d in {10, 11}.
-
- * @param[in]  x10: dmem pointer to input byte array
- * @param[out] x11: dmem pointer to output polynomial
+ * Return r = Decompressq(x, d) = round((q / 2^d) * x), where d = 10 for
+ * k in {2, 3} and d = 11 for k = 4. This recovers one polynomial of the first
+ * ciphertext component u.
+ *
+ * On return, x10 has been advanced by the 320 or 352 bytes consumed and x11 by
+ * one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the input byte array
+ * @param[out] x11: dmem pointer to the output polynomial
  * @param[in]  x12: k, the security level
  * @param[in]  w31: all-zero register
  *
@@ -528,15 +542,15 @@ _handle_k4_polyvec_decompress:
   bn.sid x4, 0(x11++)
   ret
 
-/*
- * Name: polyvec_decompress_kn4
+/**
+ * Decompression of 16 coefficients with d = 10, for KYBER_K = {2, 3};
+ * subroutine of poly_polyvec_decompress.
  *
- * Subroutine of poly_polyvec_decompress for decompressing 16 coefficients
- * for KYBER_K = {2, 3}.
+ * This routine is constant time.
  *
- * @param[in]  w1: input vector with 16 d-bit compressed coefficients
- * @param[out] w1: output vector with 16 16-bit coefficients
- * @param[in]  w2: (0x00008000)^8
+ * @param[in,out] w1: input vector with 16 10-bit compressed coefficients, which
+ *                    is overwritten with the 16 16-bit output coefficients
+ * @param[in]     w2: (0x00008000)^8
  *
  * clobbered registers: w1, acc, acch
  * clobbered flag groups: none
@@ -550,15 +564,15 @@ polyvec_decompress_kn4:
   bn.mulv.l.16h.acc.hi w1, w1, sw0.0 /* * q + acc(h) */
   ret
 
-/*
- * Name: polyvec_decompress_k4
+/**
+ * Decompression of 16 coefficients with d = 11, for KYBER_K = 4; subroutine of
+ * poly_polyvec_decompress.
  *
- * Subroutine of poly_polyvec_decompress for decompressing 16 coefficients
- * for KYBER_K = 4.
+ * This routine is constant time.
  *
- * @param[in]  w1: input vector with 16 d-bit compressed coefficients
- * @param[out] w1: output vector with 16 16-bit coefficients
- * @param[in]  w2: (0x00008000)^8
+ * @param[in,out] w1: input vector with 16 11-bit compressed coefficients, which
+ *                    is overwritten with the 16 16-bit output coefficients
+ * @param[in]     w2: (0x00008000)^8
  *
  * clobbered registers: w1, acc, acch
  * clobbered flag groups: none

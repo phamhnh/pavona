@@ -53,21 +53,29 @@
 /* Config to start a SHA3_512 operation. */
 #define SHA3_512_CFG 0x10
 
-/*
- * Name:        crypto_kem_dec
+/**
+ * Decapsulation for the CCA-secure ML-KEM key encapsulation mechanism.
  *
- * Description: Generates shared secret for given
- *              cipher text and private key
+ * Derive the shared secret from a ciphertext and a secret key: decrypt the
+ * ciphertext, re-encrypt the recovered message with indcpa_enc_cmp and compare
+ * the result against the input ciphertext. If the comparison fails, the
+ * implicit-rejection secret derived from z is returned instead of the true
+ * shared secret; the two are selected with a constant-time conditional move.
  *
- * Flags: -.
- *
- * @param[in]  x10 (a0): dmem pointer to input ct
- * @param[in]  x11 (a1): dmem pointer to input sk
- * @param[out] x12 (a2): dmem pointer to output key_a
+ * @param[in]  x10 (a0): dmem pointer to the input ciphertext
+ * @param[in]  x11 (a1): dmem pointer to the input masked secret key, holding
+ *                       NSHARES shares
+ * @param[out] x12 (a2): dmem pointer to the output shared secret
  * @param[in]  x13 (a3): k, the security level
  * @param[in]  w31: all-zero register
  *
- * clobbered registers: a0-a4, t0-t5, w8, w16
+ * UNPROTECTED
+ * clobbered registers: x2 to x15, x18 to x28, w0 to w26, w30, acc, acch, mod
+ * clobbered flag groups: FG0
+ *
+ * HARDENED
+ * clobbered registers: x2 to x31, w0 to w30, acc, acch, mod
+ * clobbered flag groups: FG0
  */
 .globl crypto_kem_dec
 .type crypto_kem_dec, @function

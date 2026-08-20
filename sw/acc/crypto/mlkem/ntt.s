@@ -9,16 +9,18 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .text
-/*
- * Name: ntt
+/**
+ * Number Theoretic Transform (NTT).
  *
  * Return r = NTT(x) for ML-KEM with n = 256 and q = 3329.
  *
- * On return, x10 and x12 have been advanced by one polynomial (512 bytes)
+ * On return, x10 and x12 have been advanced by one polynomial (512 bytes),
  * so that consecutive calls walk a polynomial vector.
  *
+ * This routine is constant time.
+ *
  * @param[in]  x10: dmem pointer to x
- * @param[in]  x11: dmem pointer to array of twiddle factors
+ * @param[in]  x11: dmem pointer to the twiddle factors twiddles_ntt
  * @param[out] x12: dmem pointer to r
  * @param[in]  w31: all-zero register
  * @param[in]  mod: 2q

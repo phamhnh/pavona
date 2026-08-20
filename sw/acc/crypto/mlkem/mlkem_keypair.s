@@ -51,20 +51,28 @@
 /* Config to start a SHA3_256 operation. */
 #define SHA3_256_CFG 0x8
 
-/*
- * Name:        crypto_kem_keypair
+/**
+ * Key generation for the CCA-secure ML-KEM key encapsulation mechanism.
  *
- * Description: Generates public and private key
- *              for CCA-secure Kyber key encapsulation mechanism
+ * Run indcpa_keypair on the seed d, then complete the secret key by appending
+ * the public key, its hash H(pk) and the implicit-rejection seed z.
  *
- * Flags: Clobbers FG0, has no meaning beyond the scope of this subroutine.
+ * The seed buffer holds d || z, that is 2 * KYBER_SYMBYTES = 64 bytes. When
+ * built with HARDENED, both halves are Boolean-shared into two shares each, so
+ * the buffer holds d_0 || d_1 || z_0 || z_1 and is 128 bytes long instead.
  *
- * @param[in]  x10 (a0): pointer to seed (2*KYBER_SYMBYTES = 64)
- * @param[out] x11 (a1): dmem pointer to kem_pk
- * @param[out] x12 (a2): dmem pointer to kem_sk
- * @param[in]  x13 (a3): k, the security level
+ * @param[in]  x10: dmem pointer to the input seed
+ * @param[out] x11: dmem pointer to the output public key
+ * @param[out] x12: dmem pointer to the output secret key
+ * @param[in]  x13: k, the security level
  *
- * clobbered registers: a0-a4, t0-t5, w8, w16
+ * UNPROTECTED
+ * clobbered registers: x4 to x13, x18 to x28, w0 to w26, acc, acch, mod
+ * clobbered flag groups: FG0
+ *
+ * HARDENED
+ * clobbered registers: x2, x4 to x31, w0 to w30, acc, acch, mod
+ * clobbered flag groups: FG0
  */
 
 .globl crypto_kem_keypair

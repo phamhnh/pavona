@@ -10,20 +10,26 @@
 
 .text
 
-/*
- * basemul
+/**
+ * Pair-pointwise multiplication of two polynomials in the NTT domain.
  *
- * Return r = x * y * R^-1 mod q with R = 2^16, given that x and y are in NTT
- * domain. x and y are polynomials with n = 256 coefficients in Z_q where
- * q = 3329. The R^-1 factor comes from the Montgomery reduction of each
- * coefficient product; callers remove it with poly_tomont or absorb it in intt.
+ * Return r = x * y * R^-1 mod q with R = 2^16, where x and y are polynomials
+ * with n = 256 coefficients in Z_q for q = 3329, both given in NTT domain.
+ * The R^-1 factor stems from the Montgomery reduction of each coefficient
+ * product; callers either remove it with poly_tomont or absorb it into intt.
  *
- * On return, x10, x11 and x13 have been advanced by one polynomial (512 bytes)
- * so that consecutive calls walk a polynomial vector; x12 is restored.
+ * This routine only zeroes the destination r and then falls through into
+ * basemul_acc, so it has the same register requirements.
+ *
+ * On return, x10, x11 and x13 have been advanced by one polynomial
+ * (512 bytes), so that consecutive calls walk a polynomial vector, and x12 has
+ * been restored to its original value.
+ *
+ * This routine is constant time.
  *
  * @param[in]  x10: dmem pointer to x
  * @param[in]  x11: dmem pointer to y
- * @param[in]  x12: dmem pointer to array of twiddles_basemul
+ * @param[in]  x12: dmem pointer to the twiddle factors twiddles_basemul
  * @param[out] x13: dmem pointer to r
  * @param[in]  w31: all-zero register
  * @param[in]  mod: 2q
@@ -57,24 +63,27 @@ basemul:
   /* Fall through into basemul_acc. */
 
 
-/*
- * basemul_acc
+/**
+ * Accumulating pair-pointwise multiplication of two polynomials in the NTT
+ * domain.
  *
- * Accumulate r += x * y * R^-1 mod q with R = 2^16, given that x and y are in
- * NTT domain. x and y are polynomials with n = 256 coefficients in Z_q where
- * q = 3329. The R^-1 factor comes from the Montgomery reduction of each
- * coefficient product; callers remove it with poly_tomont or absorb it in intt.
+ * Compute r += x * y * R^-1 mod q with R = 2^16, where x and y are polynomials
+ * with n = 256 coefficients in Z_q for q = 3329, both given in NTT domain.
+ * The R^-1 factor stems from the Montgomery reduction of each coefficient
+ * product; callers either remove it with poly_tomont or absorb it into intt.
  *
- * On return, x10, x11 and x13 have been advanced by one polynomial (512 bytes)
- * so that consecutive calls walk a polynomial vector; x12 is restored.
+ * On return, x10, x11 and x13 have been advanced by one polynomial
+ * (512 bytes), so that consecutive calls walk a polynomial vector, and x12 has
+ * been restored to its original value.
  *
- * @param[in]  x10: dmem pointer to x
- * @param[in]  x11: dmem pointer to y
- * @param[in]  x12: dmem pointer to array of twiddles_basemul
- * @param[out] x13: dmem pointer to r
- * @param[in]  w16: sw0, where sw0.0 = q, sw0.2 = -q^-1 mod 2^16
- * @param[in]  w31: all-zero register
- * @param[in]  mod: 2q
+ * This routine is constant time.
+ *
+ * @param[in]     x10: dmem pointer to x
+ * @param[in]     x11: dmem pointer to y
+ * @param[in]     x12: dmem pointer to the twiddle factors twiddles_basemul
+ * @param[in,out] x13: dmem pointer to r
+ * @param[in]     w31: all-zero register
+ * @param[in]     mod: 2q
  *
  * clobbered registers: x4, x10 to x13, w0 to w15, w17 to w26, acc, acch
  * clobbered flag groups: none

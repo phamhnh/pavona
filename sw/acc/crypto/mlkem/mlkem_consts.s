@@ -9,7 +9,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 /**
- * Constants used by internal libraries for ML-DSA computations.
+ * Constants used by internal libraries for ML-KEM computations.
  */
 
 .data

@@ -10,10 +10,18 @@
 
 .text
 
-/*
- * Name: poly_compress
+/**
+ * Compression and subsequent serialization of a polynomial for d in {4, 5}.
  *
- * Return r = Compressq(x, d) = round((2^d / q) * x) mod 2^d for d in {4, 5}.
+ * Return r = Compressq(x, d) = round((2^d / q) * x) mod 2^d, where d = 4 for
+ * k in {2, 3} and d = 5 for k = 4. This is the compression applied to the
+ * second ciphertext component v.
+ *
+ * On return, x10 has been advanced by one polynomial (512 bytes) and x11 by
+ * the 128 or 160 bytes written. Register w16 (sw0) is saved in w30 and
+ * restored before returning.
+ *
+ * This routine is constant time.
  *
  * @param[in]  x10: dmem pointer to x
  * @param[out] x11: dmem pointer to r
@@ -185,15 +193,18 @@ _handle_k4_poly_compress:
   bn.mov w16, w30
   ret
 
-/*
- * Name: _poly_compress_16
+/**
+ * Compression of 16 coefficients with d = 5; subroutine of poly_compress.
  *
- * Description: Subroutine of poly_compress for compressing 16 coefficients
+ * Only reached on the k = 4 path of poly_compress, which is the only one that
+ * uses d = 5.
+ *
+ * This routine is constant time.
  *
  * @param[in]  w0: input vector with 16 16-bit coefficients
- * @param[out] w1: output vector with 16 compressed coefficients
- * @param[in]  w3: (0x680)^8
- * @param[in]  w16 (sw0): const_1290176
+ * @param[out] w1: output vector with 16 5-bit compressed coefficients
+ * @param[in]  w3: (0x680)^8, that is 1664 in every 32-bit lane
+ * @param[in]  w16 (sw0): sw0.0 = 1290176 = 40318 * 2^5
  * @param[in]  w31: all-zero register
  *
  * clobbered registers: w0 to w1
@@ -214,10 +225,18 @@ _poly_compress_16:
   bn.trn1.16h          w1, w1, w0
   ret
 
-/*
- * Name: poly_polyvec_compress
+/**
+ * Compression and subsequent serialization of a polynomial for d in {10, 11}.
  *
- * Return r = Compressq(x, d) = round((2^d / q) * x) mod 2^d for d in {10, 11}.
+ * Return r = Compressq(x, d) = round((2^d / q) * x) mod 2^d, where d = 10 for
+ * k in {2, 3} and d = 11 for k = 4. This is the compression applied to each
+ * polynomial of the first ciphertext component u.
+ *
+ * On return, x10 has been advanced by one polynomial (512 bytes) and x11 by
+ * the 320 or 352 bytes written. Register w16 (sw0) is saved in w30 and
+ * restored before returning.
+ *
+ * This routine is constant time.
  *
  * @param[in]  x10: dmem pointer to x
  * @param[out] x11: dmem pointer to r
@@ -524,16 +543,16 @@ _handle_k4_poly_polyvec_compress:
   bn.mov w16, w30
   ret
 
-/*
- * Name: _poly_polyvec_compress_16_kn4
+/**
+ * Compression of 16 coefficients with d = 10, for KYBER_K = {2, 3};
+ * subroutine of poly_polyvec_compress.
  *
- * Description: Subroutine of poly_polyvec_compress for compressing 16
- *              coefficients for KYBER_K = {2, 3}.
+ * This routine is constant time.
  *
  * @param[in]  w0: input vector with 16 16-bit coefficients
- * @param[out] w1: output vector with 16 compressed coefficients
- * @param[in]  w3: (0x681)^8
- * @param[in]  w16 (sw0): const_1290167
+ * @param[out] w1: output vector with 16 10-bit compressed coefficients
+ * @param[in]  w3: (0x681)^8, that is 1665 in every 32-bit lane
+ * @param[in]  w16 (sw0): sw0.0 = 1290167, the value of const_1290167
  * @param[in]  w31: all-zero register
  *
  * clobbered registers: w0 to w1
@@ -555,16 +574,16 @@ _poly_polyvec_compress_16_kn4:
   ret
 
 
-/*
- * Name: _poly_polyvec_compress_16_k4
+/**
+ * Compression of 16 coefficients with d = 11, for KYBER_K = 4; subroutine of
+ * poly_polyvec_compress.
  *
- * Description: Subroutine of poly_polyvec_compress for compressing 16
- *              coefficients for KYBER_K = 4.
+ * This routine is constant time.
  *
  * @param[in]  w0: input vector with 16 16-bit coefficients
- * @param[out] w1: output vector with 16 compressed coefficients
- * @param[in]  w3: (0x680)^8
- * @param[in]  w16 (sw0): const_1290168
+ * @param[out] w1: output vector with 16 11-bit compressed coefficients
+ * @param[in]  w3: (0x680)^8, that is 1664 in every 32-bit lane
+ * @param[in]  w16 (sw0): sw0.0 = 1290168 = 645084 * 2
  * @param[in]  w31: all-zero register
  *
  * clobbered registers: w0 to w1

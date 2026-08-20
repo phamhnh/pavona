@@ -10,17 +10,19 @@
 
 .text
 
-/*
- * Name: intt
+/**
+ * Inverse Number Theoretic Transform (INTT).
  *
- * Return r = INTT(x) for ML-KEM with n = 256 and Q = 3329.
+ * Return r = INTT(x) for ML-KEM with n = 256 and q = 3329.
  *
- * On return, x10 and x12 have been advanced by one polynomial (512 bytes)
+ * On return, x10 and x12 have been advanced by one polynomial (512 bytes),
  * so that consecutive calls walk a polynomial vector.
  *
+ * This routine is constant time.
+ *
  * @param[in]  x10: dmem pointer to x
- * @param[in]  x11: dmem pointer to array of twiddle factors,
- *                  last element is n^{-1} mod q
+ * @param[in]  x11: dmem pointer to the twiddle factors twiddles_intt, whose
+ *                  last element folds in the final scaling by n^-1
  * @param[out] x12: dmem pointer to r
  * @param[in]  w31: all-zero register
  * @param[in]  mod: 2q

@@ -2,10 +2,14 @@
 /* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-/*
- * Name: whitening
+/**
+ * Whitening step for NTT, INTT and pair-pointwise multiplication.
  *
- * Constant-time whitening step for NTT, INTT and pair-pointwise multiplication.
+ * Zeroize the clobbered WDRs containing coefficients of secret values
+ * that ntt, intt, basemul and basemul_acc use. Wide registers that
+ * contain constants are not wipe.
+ *
+ * This routine is constant time.
  *
  * clobbered registers: w0 to w15, w17 to w25
  * clobbered flag groups: FG0

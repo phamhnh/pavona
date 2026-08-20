@@ -50,19 +50,29 @@
 .equ x31, t6
 
 
-/*
- * Name:        indcpa_dec
+/**
+ * Decryption for the CPA-secure public-key encryption scheme underlying
+ * ML-KEM.
  *
- * Description: Decryption function of the CPA-secure
- *              public-key encryption scheme underlying Kyber.
+ * Recover the message from a ciphertext: decompress u and v, compute
+ * m = v - s^T * u, and convert the result back into 32 bytes. When built with
+ * HARDENED, the message is produced in Boolean-shared form by
+ * masked_poly_tomsg.
  *
- * @param[in]  x10 (a0): dmem pointer to input ciphertext
- * @param[in]  x11 (a1): dmem pointer to input packed masked sk
- * @param[out] x12 (a2): dmem pointer to output message
- * @param[in]  x13 (a3): k, the security level
+ * @param[in]  x10: dmem pointer to the input ciphertext
+ * @param[in]  x11: dmem pointer to the input packed masked secret key
+ * @param[out] x12: dmem pointer to the output message
+ * @param[in]  x13: k, the security level
  * @param[in]  w31: all-zero register
  *
- * clobbered registers: x2 to x19, x21 to x25, x28 to x31, w0 to w26, w28 to w30, acc, acch, mod
+ * UNPROTECTED
+ * clobbered registers: x2 to x5, x8 to x13, x18 to x19, x21 to x25,
+ *                      w0 to w26, w30, acc, acch, mod
+ * clobbered flag groups: FG0
+ *
+ * HARDENED
+ * clobbered registers: x2 to x19, x21 to x25, x28 to x31, w0 to w26,
+ *                      w28 to w29, acc, acch, mod
  * clobbered flag groups: FG0
  */
 .globl indcpa_dec

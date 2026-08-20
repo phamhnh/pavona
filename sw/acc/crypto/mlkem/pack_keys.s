@@ -10,13 +10,18 @@
 
 .text
 
-/*
- * Name: poly_tobytes
- *
+/**
  * Serialization of a polynomial into KYBER_POLYBYTES = 384 bytes.
  *
- * @param[in]  x10: dmem pointer to input polynomial
- * @param[out] x11: dmem pointer to output byte array
+ * Pack the 256 coefficients of a polynomial into 384 bytes, 12 bits each.
+ *
+ * On return, x10 has been advanced by one polynomial (512 bytes) and x11 by
+ * KYBER_POLYBYTES, so that consecutive calls walk a polynomial vector.
+ *
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the input polynomial
+ * @param[out] x11: dmem pointer to the output byte array
  * @param[in]  w31: all-zero register
  *
  * clobbered registers: x4, x10 to x11, w0 to w1
@@ -78,13 +83,19 @@ poly_tobytes:
   endloop
   ret
 
-/*
- * Name: poly_frombytes
- *
+/**
  * De-serialization of a polynomial; inverse of poly_tobytes.
  *
- * @param[in]  x10: dmem pointer to input byte array
- * @param[out] x11: dmem pointer to output polynomial
+ * Unpack KYBER_POLYBYTES = 384 bytes into the 256 coefficients of a
+ * polynomial, 12 bits each.
+ *
+ * On return, x10 has been advanced by KYBER_POLYBYTES and x11 by one
+ * polynomial (512 bytes), so that consecutive calls walk a polynomial vector.
+ *
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the input byte array
+ * @param[out] x11: dmem pointer to the output polynomial
  *
  * clobbered registers: x4 to x5, x10 to x11, w0 to w2
  * clobbered flag groups: FG0

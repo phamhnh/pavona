@@ -10,13 +10,18 @@
 
 .text
 
-/*
- * Name: poly_frommsg
+/**
+ * Conversion of a 32-byte message into a polynomial.
  *
- * Convert 32-byte message to polynomial.
+ * Map every one of the 256 message bits to one coefficient, sending a 0 bit to
+ * 0 and a 1 bit to (q + 1) / 2 = 1665.
  *
- * @param[in]  x10: dmem pointer to input byte array
- * @param[out] x11: dmem pointer to output polynomial
+ * On return, x11 has been advanced by one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the input byte array
+ * @param[out] x11: dmem pointer to the output polynomial
  * @param[in]  w31: all-zero register
  *
  * clobbered registers: x4 to x5, x11, w0 to w1, w3
@@ -44,13 +49,20 @@ poly_frommsg:
   endloop
   ret
 
-/*
- * Name: poly_tomsg
+/**
+ * Conversion of a polynomial into a 32-byte message.
  *
- * Convert polynomial to 32-byte message.
+ * Compress every coefficient down to a single bit, that is r = Compress(x, 1),
+ * which yields 1 exactly for the coefficients that are closer to
+ * (q + 1) / 2 = 1665 than to 0.
  *
- * @param[in]  x10: dmem pointer to input polynomial
- * @param[out] x11: dmem pointer to output byte array
+ * On return, x10 has been advanced by one polynomial (512 bytes). Register w16
+ * (sw0) is saved in w30 and restored before returning.
+ *
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the input polynomial
+ * @param[out] x11: dmem pointer to the output byte array
  * @param[in]  w31: all-zero register
  *
  * clobbered registers: x4 to x5, x10, w0 to w3, w16, w30
@@ -97,10 +109,16 @@ poly_tomsg:
   bn.mov w16, w30
   ret
 
-/*
- * Name: poly_add
+/**
+ * Modular addition of two polynomials.
  *
- * Return r = (x + y) modulo any modulus q.
+ * Return r = (x + y) mod q, coefficient by coefficient, for whichever modulus
+ * the mod WSR currently holds.
+ *
+ * On return, x10, x11 and x12 have been advanced by one polynomial
+ * (512 bytes), so that consecutive calls walk a polynomial vector.
+ *
+ * This routine is constant time.
  *
  * @param[in]  x10: dmem pointer to x
  * @param[in]  x11: dmem pointer to y
@@ -123,10 +141,16 @@ poly_add:
   endloop
   ret
 
-/*
- * Name: poly_sub
+/**
+ * Modular subtraction of two polynomials.
  *
- * Return r = (x - y) modulo any modulus q.
+ * Return r = (x - y) mod q, coefficient by coefficient, for whichever modulus
+ * the mod WSR currently holds.
+ *
+ * On return, x10, x11 and x12 have been advanced by one polynomial
+ * (512 bytes), so that consecutive calls walk a polynomial vector.
+ *
+ * This routine is constant time.
  *
  * @param[in]  x10: dmem pointer to x
  * @param[in]  x11: dmem pointer to y
@@ -149,12 +173,19 @@ poly_sub:
   endloop
   ret
 
-/*
- * Name: poly_tomont (in-place)
+/**
+ * In-place conversion of a polynomial into the Montgomery domain.
  *
- * Put the input polynomial x out of Montgomery domain for ML-KEM with q = 3329.
+ * Multiply every coefficient by R = 2^16 mod q, by multiplying with the
+ * precomputed constant 2^32 mod q and then applying a Montgomery reduction.
+ * This is also how callers strip the R^-1 factor that basemul and basemul_acc
+ * leave behind.
  *
- * @param[in,out] x10: dmem pointer t0 x
+ * On return, x10 has been advanced by one polynomial (512 bytes).
+ *
+ * This routine is constant time.
+ *
+ * @param[in,out] x10: dmem pointer to x
  * @param[in]     w31: all-zero register
  *
  * clobbered registers: x4 to x5, x10, w0 to w1, acc, acch

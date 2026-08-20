@@ -41,21 +41,23 @@
 .equ x30, t5
 .equ x31, t6
 
-/*
- * Name:        indcpa_enc
+/**
+ * Encryption for the CPA-secure public-key encryption scheme underlying
+ * ML-KEM.
  *
- * Description: Encryption function of the CPA-secure
- *              public-key encryption scheme underlying Kyber.
+ * Encrypt a 32-byte message under a packed public key, using the coins as the
+ * randomness for the noise polynomials: sample r, e1 and e2, then compute and
+ * compress the two ciphertext components u = A^T * r + e1 and
+ * v = t^T * r + e2 + Decompress(m, 1).
  *
- * Flags: Clobbers FG0, has no meaning beyond the scope of this subroutine.
+ * @param[in]  x10: dmem pointer to the input message (32 bytes)
+ * @param[in]  x11: dmem pointer to the input packed public key
+ * @param[in]  x12: dmem pointer to the input coins (32 bytes)
+ * @param[out] x13: dmem pointer to the output ciphertext
+ * @param[in]  x14: k, the security level
  *
- * @param[in]  x10 (a0): dmem pointer to input message
- * @param[in]  x11 (a1): dmem pointer to input packed pk
- * @param[in]  x12 (a2): dmem pointer to input coins
- * @param[out] x13 (a3): dmem pointer to output ct
- * @param[in]  x14 (a4): k, the security level
- *
- * clobbered registers: x4 to x29, w0 to w31, acc, acch, mod
+ * clobbered registers: x4 to x13, x18 to x19, x21 to x24, x26 to x28,
+ *                      w0 to w26, w30, acc, acch, mod
  * clobbered flag groups: FG0
  */
 .globl indcpa_enc

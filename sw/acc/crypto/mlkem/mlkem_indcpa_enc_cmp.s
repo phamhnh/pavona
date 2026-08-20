@@ -48,26 +48,29 @@
 .equ x31, t6
 
 
-/*
- * Name:        indcpa_enc_cmp
+/**
+ * Re-encryption and ciphertext comparison for the decapsulation check.
  *
- * Description: Encryption function of the CPA-secure
- *              public-key encryption scheme underlying Kyber; compares the
- *              re-encrypted ciphertext against the input ciphertext instead of
- *              writing it out.
+ * Encrypt a Boolean-shared message exactly as indcpa_enc does, but compare
+ * each compressed ciphertext component against the given ciphertext instead of
+ * writing it out. This lets crypto_kem_dec verify the re-encryption without
+ * ever materializing the re-encrypted ciphertext in memory.
  *
- * Flags: Clobbers FG0, has no meaning beyond the scope of this subroutine.
- *
- * @param[in]  x10 (a0): dmem pointer to input Boolean-shared message
- * @param[in]  x11 (a1): dmem pointer to input packed pk
- * @param[in]  x12 (a2): dmem pointer to input coins
- * @param[in]  x13 (a3): dmem pointer to input ct
- * @param[in]  x14 (a4): nshares, the number of shares
- * @param[in]  x15 (a5): k, the security level
+ * @param[in]  x10: dmem pointer to the input Boolean-shared message
+ * @param[in]  x11: dmem pointer to the input packed public key
+ * @param[in]  x12: dmem pointer to the input coins (32 bytes)
+ * @param[in]  x13: dmem pointer to the input ciphertext to compare against
+ * @param[in]  x14: nshares, the number of shares of the message
+ * @param[in]  x15: k, the security level
  * @param[in]  w31: all-zero register
  * @param[out] w0: 1 if the ciphertexts match, 0 otherwise
  *
- * clobbered registers: x4 to x29, w0 to w31, acc, acch, mod
+ * UNPROTECTED
+ * clobbered registers: x2 to x13, x18 to x28, w0 to w26, w30, acc, acch, mod
+ * clobbered flag groups: FG0
+ *
+ * HARDENED
+ * clobbered registers: x2 to x24, x26 to x31, w0 to w30, acc, acch, mod
  * clobbered flag groups: FG0
  */
 .globl indcpa_enc_cmp
@@ -346,7 +349,7 @@ _handle_k2_compute_v:
   addi t0, s9, 0
   addi t1, s3, 0 /* ct */
   loop s5, 1
-  	add t1, t1, s11
+    add t1, t1, s11
   endloop
   addi x4, x0, 1
   srli t2, s10, 5
@@ -1511,7 +1514,7 @@ _handle_k2_compute_b:
   jal  x1, poly_gen_matrix_init
 
   /* Compare b and ct[i * POLY_POLYVECDECOMPRESSED_BYTES : (i + 1) * POLY_POLYVECDECOMPRESSED_BYTES].
-  	* Accumulate output to r. */
+   * Accumulate output to r. */
   la   a0, mpoly_b
   addi a1, s3, 0 /* ct[i * POLY_POLYVECDECOMPRESSED_BYTES : (i + 1) * POLY_POLYVECDECOMPRESSED_BYTES] */
   addi a2, x0, 320

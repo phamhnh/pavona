@@ -47,22 +47,25 @@
 /* Config to start a SHA3_512 operation. */
 #define SHA3_512_CFG 0x10
 
-/*
- * Name:        crypto_kem_enc
+/**
+ * Encapsulation for the CCA-secure ML-KEM key encapsulation mechanism.
  *
- * Description: Generates cipher text and shared
- *              secret for given public key
+ * Derive a ciphertext and the matching shared secret from a public key and 32
+ * bytes of randomness, by hashing the randomness together with H(pk) into the
+ * shared secret and the coins for indcpa_enc.
  *
- * Flags: Clobbers FG0, has no meaning beyond the scope of this subroutine.
+ * @param[in]  x10: dmem pointer to the input randomness (32 bytes)
+ * @param[in]  x11: dmem pointer to the input public key
+ * @param[out] x12: dmem pointer to the output ciphertext
+ * @param[out] x13: dmem pointer to the output shared secret
+ * @param[in]  x14: k, the security level
  *
- * @param[in]  x10 (a0): dmem pointer to input random bytes (32)
- * @param[in]  x11 (a1): dmem pointer to input public key
- * @param[out] x12 (a2): dmem pointer to output ciphertext
- * @param[out] x13 (a3): dmem pointer to output shared secret
- * @param[in]  x14 (a4): k, the security level
- *
- * clobbered registers: x4 to x29, w0 to w31, acc, acch, mod
+ * UNPROTECTED
+ * clobbered registers: x4 to x13, x18 to x19, x21 to x24, x26 to x28,
+ *                      w0 to w26, w30, acc, acch, mod
  * clobbered flag groups: FG0
+ *
+ * HARDENED
  */
 .globl crypto_kem_enc
 .type crypto_kem_enc, @function

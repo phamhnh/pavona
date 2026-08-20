@@ -13,14 +13,17 @@
 /* Config to start a SHAKE-128 operation. */
 #define SHAKE128_CFG 0x2
 
-/*
- * Name: poly_gen_matrix_init
+/**
+ * Initialization of the SHAKE-128 operation for poly_gen_matrix.
  *
- * Initialze a SHAKE128 operation to prepare for rejection sampling
- * on uniform random bytes using `poly_gen_matrix`.
+ * Configure a SHAKE-128 operation for a 34-byte message and absorb
+ * seed || i || j, so that a subsequent call to `poly_gen_matrix` can squeeze
+ * the bytes it rejection-samples from.
  *
- * @param[in]  x10: pointer to seed (KYBER_SYMBYTES = 32)
- * @param[in]  x11: pointer to i||j (2 bytes)
+ * This routine is constant time.
+ *
+ * @param[in]  x10: dmem pointer to the seed (KYBER_SYMBYTES = 32 bytes)
+ * @param[in]  x11: dmem pointer to the matrix indices i || j (2 bytes)
  *
  * clobbered registers: x5, w0
  * clobbered flag groups: none
@@ -44,15 +47,17 @@ poly_gen_matrix_init:
   bn.wsrw kmac_msg, w0
   ret
 
-/*
- * Name: poly_gen_matrix
+/**
+ * Rejection sampling of one entry of the matrix A.
  *
- * Run rejection sampling on uniform random bytes to generate
- * 256 uniform random integers mod q = 3329; this function
- * assumes `poly_gen_matrix_init` has been called first with
- * the appropriate seed and indices.
+ * Squeeze uniformly random bytes and rejection-sample them into 256
+ * coefficients that are uniform over Z_q for q = 3329, keeping every 12-bit
+ * value below q and discarding the rest. Assumes that `poly_gen_matrix_init`
+ * has been called beforehand with the appropriate seed and matrix indices.
  *
- * @param[out] x11: dmem pointer to polynomial
+ * On return, x11 has been advanced by one polynomial (512 bytes).
+ *
+ * @param[out] x11: dmem pointer to the output polynomial
  * @param[in]  kmac_digest: SHAKE-128 squeeze set up by poly_gen_matrix_init
  * @param[in]  w31: all-zero register
  *
