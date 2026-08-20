@@ -26,23 +26,23 @@
 .globl poly_frommsg
 .type poly_frommsg, @function
 poly_frommsg:
-    la     x5, modulus_over_2
-    addi   x4, x0, 3
-    bn.lid x4, 0(x5)
+  la     x5, modulus_over_2
+  addi   x4, x0, 3
+  bn.lid x4, 0(x5)
 
-    addi   x4, x0, 1
-    bn.lid x0, 0(x10)
-    loopi 16, 7
-        loopi 16, 3
-            bn.rshi w1, w0, w1 >> 1
-            bn.rshi w1, w31, w1 >> 15
-            bn.rshi w0, w31, w0 >> 1
-        endloop
-        bn.subv.16h w1, w31, w1
-        bn.and      w1, w1, w3
-        bn.sid      x4, 0(x11++)
+  addi   x4, x0, 1
+  bn.lid x0, 0(x10)
+  loopi 16, 7
+    loopi 16, 3
+      bn.rshi w1, w0, w1 >> 1
+      bn.rshi w1, w31, w1 >> 15
+      bn.rshi w0, w31, w0 >> 1
     endloop
-    ret
+    bn.subv.16h w1, w31, w1
+    bn.and      w1, w1, w3
+    bn.sid      x4, 0(x11++)
+  endloop
+  ret
 
 /*
  * Name: poly_tomsg
@@ -60,42 +60,42 @@ poly_frommsg:
 .globl poly_tomsg
 .type poly_tomsg, @function
 poly_tomsg:
-    /* Load constants. */
-    la     x5, modulus_over_2
-    addi   x4, x0, 2
-    bn.lid x4, 0(x5) /* w2 = (0x681)^16 */
-    bn.mov w30, w16
-    la     x5, const_1290167
-    addi   x4, x0, 16
-    bn.lid x4, 0(x5) /* w16 = 1290167 */
+  /* Load constants. */
+  la     x5, modulus_over_2
+  addi   x4, x0, 2
+  bn.lid x4, 0(x5) /* w2 = (0x681)^16 */
+  bn.mov w30, w16
+  la     x5, const_1290167
+  addi   x4, x0, 16
+  bn.lid x4, 0(x5) /* w16 = 1290167 */
 
-    /* Multiply the constant 80635 with 2**4 so that later we shift to the right
-     * 32 bits instead of 28 bits. This means we can return the high parts of
-     * the 64-bit products within the multiplication instruction. */
-    bn.subi w16, w16, 7 /* w16 = 1290160 = 80635 << 4 */
+  /* Multiply the constant 80635 with 2**4 so that later we shift to the right
+   * 32 bits instead of 28 bits. This means we can return the high parts of
+   * the 64-bit products within the multiplication instruction. */
+  bn.subi w16, w16, 7 /* w16 = 1290160 = 80635 << 4 */
 
-    loopi 16, 14
-        bn.lid               x0, 0(x10++)
-        bn.shv.16h           w0, w0 << 1   /* <= 1 */
-        bn.addv.16h          w0, w0, w2    /* += 1665 */
-        bn.trn1.16h          w1, w0, w31   /* Put even coeffs in 32-bit slots. */
-        bn.mulv.l.8s.even.hi w1, w1, sw0.0 /* >> 32 = high parts of 64-bit products. */
-        bn.mulv.l.8s.odd.hi  w1, w1, sw0.0 /* >> 32 = high parts of 64-bit products. */
-        bn.trn2.16h          w0, w0, w31   /* Put odd coeffs to 32-bit slots. */
-        bn.mulv.l.8s.even.hi w0, w0, sw0.0 /* >> 32 = high parts of 64-bit products. */
-        bn.mulv.l.8s.odd.hi  w0, w0, sw0.0 /* >> 32 = high parts of 64-bit products. */
-        bn.trn1.16h          w0, w1, w0
-        loopi 16, 2
-            bn.rshi w3, w0, w3 >> 1
-            bn.rshi w0, w31, w0 >> 16
-        endloop
-        nop
+  loopi 16, 14
+    bn.lid               x0, 0(x10++)
+    bn.shv.16h           w0, w0 << 1   /* <= 1 */
+    bn.addv.16h          w0, w0, w2    /* += 1665 */
+    bn.trn1.16h          w1, w0, w31   /* Put even coeffs in 32-bit slots. */
+    bn.mulv.l.8s.even.hi w1, w1, sw0.0 /* >> 32 = high parts of 64-bit products. */
+    bn.mulv.l.8s.odd.hi  w1, w1, sw0.0 /* >> 32 = high parts of 64-bit products. */
+    bn.trn2.16h          w0, w0, w31   /* Put odd coeffs to 32-bit slots. */
+    bn.mulv.l.8s.even.hi w0, w0, sw0.0 /* >> 32 = high parts of 64-bit products. */
+    bn.mulv.l.8s.odd.hi  w0, w0, sw0.0 /* >> 32 = high parts of 64-bit products. */
+    bn.trn1.16h          w0, w1, w0
+    loopi 16, 2
+      bn.rshi w3, w0, w3 >> 1
+      bn.rshi w0, w31, w0 >> 16
     endloop
-    addi   x4, x0, 3
-    bn.sid x4, 0(x11)
+    nop
+  endloop
+  addi   x4, x0, 3
+  bn.sid x4, 0(x11)
 
-    bn.mov w16, w30
-    ret
+  bn.mov w16, w30
+  ret
 
 /*
  * Name: poly_add
@@ -114,14 +114,14 @@ poly_tomsg:
 .globl poly_add
 .type poly_add, @function
 poly_add:
-    addi x4, x0, 1
-    loopi 16, 4
-        bn.lid       x0, 0(x10++)
-        bn.lid       x4, 0(x11++)
-        bn.addvm.16h w0, w0, w1
-        bn.sid       x0, 0(x12++)
-    endloop
-    ret
+  addi x4, x0, 1
+  loopi 16, 4
+    bn.lid       x0, 0(x10++)
+    bn.lid       x4, 0(x11++)
+    bn.addvm.16h w0, w0, w1
+    bn.sid       x0, 0(x12++)
+  endloop
+  ret
 
 /*
  * Name: poly_sub
@@ -140,14 +140,14 @@ poly_add:
 .globl poly_sub
 .type poly_sub, @function
 poly_sub:
-    addi x4, x0, 1
-    loopi 16, 4
-        bn.lid       x0, 0(x10++)
-        bn.lid       x4, 0(x11++)
-        bn.subvm.16h w0, w0, w1
-        bn.sid       x0, 0(x12++)
-    endloop
-    ret
+  addi x4, x0, 1
+  loopi 16, 4
+    bn.lid       x0, 0(x10++)
+    bn.lid       x4, 0(x11++)
+    bn.subvm.16h w0, w0, w1
+    bn.sid       x0, 0(x12++)
+  endloop
+  ret
 
 /*
  * Name: poly_tomont (in-place)
@@ -164,16 +164,16 @@ poly_sub:
 .globl poly_tomont
 .type poly_tomont, @function
 poly_tomont:
-    la     x5, const_tomont
-    add    x4, x0, x0
-    bn.lid x4++, 0(x5)
+  la     x5, const_tomont
+  add    x4, x0, x0
+  bn.lid x4++, 0(x5)
 
-    loopi 16, 6
-        bn.lid               x4, 0(x10)
-        bn.mulv.16h.acc.z.lo w1, w0, w1
-        bn.mulv.l.16h.lo     w1, w1, sw0.2
-        bn.mulv.l.16h.acc.hi w1, w1, sw0.0
-        bn.addvm.16h         w1, w1, w31
-        bn.sid               x4, 0(x10++)
-    endloop
-    ret
+  loopi 16, 6
+    bn.lid               x4, 0(x10)
+    bn.mulv.16h.acc.z.lo w1, w0, w1
+    bn.mulv.l.16h.lo     w1, w1, sw0.2
+    bn.mulv.l.16h.acc.hi w1, w1, sw0.0
+    bn.addvm.16h         w1, w1, w31
+    bn.sid               x4, 0(x10++)
+  endloop
+  ret

@@ -204,7 +204,7 @@ _poly_uniform_inner_loop:
     bne      accumulator_count, x0, _skip_store1
     bn.sid   x0, 0(x11++)
     li       accumulator_count, 16
-_skip_store1:
+  _skip_store1:
     bn.rshi  shake_reg, w31, shake_reg >> 12 /* Shift out used 12 bits. */
   endloop
   ret
@@ -241,7 +241,7 @@ _handle_rest:
     bne        accumulator_count, x0, _skip_store1_fast
     bn.sid     x0, 0(x11++)
     li         accumulator_count, 16
-_skip_store1_fast:
+  _skip_store1_fast:
     bn.rshi    shake_reg, w31, shake_reg >> 12
   endloop
   ret

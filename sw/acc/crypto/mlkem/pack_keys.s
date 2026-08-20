@@ -26,57 +26,57 @@
 .globl poly_tobytes
 .type poly_tobytes, @function
 poly_tobytes:
-    addi x4, x0, 1
-    loopi 4, 37
-        bn.lid       x0, 0(x10++)
-        /* Reduce inputs to [0,q) because outputs of NTT without final conditional
-         * subtraction in Montgomery multiplication are in [0,2q). */
-        bn.addvm.16h w0, w0, w31
-        loopi 16, 2
-            bn.rshi w1, w0, w1 >> 12
-            bn.rshi w0, w31, w0 >> 16
-        endloop
-        bn.lid       x0, 0(x10++)
-        bn.addvm.16h w0, w0, w31
-        loopi 5, 2
-            bn.rshi w1, w0, w1 >> 12
-            bn.rshi w0, w31, w0 >> 16
-        endloop
-        bn.rshi w1, w0, w1 >> 4
-        bn.rshi w0, w31, w0 >> 4
-        bn.sid  x4, 0(x11++)
-
-        bn.rshi w1, w0, w1 >> 8
-        bn.rshi w0, w31, w0  >> 12
-        loopi 10, 2
-            bn.rshi w1, w0, w1 >> 12
-            bn.rshi w0, w31, w0 >> 16
-        endloop
-        bn.lid       x0, 0(x10++)
-        bn.addvm.16h w0, w0, w31
-        loopi 10, 2
-            bn.rshi w1, w0, w1 >> 12
-            bn.rshi w0, w31, w0 >> 16
-        endloop
-        bn.rshi w1, w0, w1 >> 8
-        bn.rshi w0, w31, w0 >> 8
-        bn.sid  x4, 0(x11++)
-
-        bn.rshi w1, w0, w1 >> 4
-        bn.rshi w0, w31, w0 >> 8
-        loopi 5, 2
-            bn.rshi w1, w0, w1 >> 12
-            bn.rshi w0, w31, w0 >> 16
-        endloop
-        bn.lid       x0, 0(x10++)
-        bn.addvm.16h w0, w0, w31
-        loopi 16, 2
-            bn.rshi w1, w0, w1 >> 12
-            bn.rshi w0, w31, w0 >> 16
-        endloop
-        bn.sid x4, 0(x11++)
+  addi x4, x0, 1
+  loopi 4, 37
+    bn.lid       x0, 0(x10++)
+    /* Reduce inputs to [0,q) because outputs of NTT without final conditional
+     * subtraction in Montgomery multiplication are in [0,2q). */
+    bn.addvm.16h w0, w0, w31
+    loopi 16, 2
+      bn.rshi w1, w0, w1 >> 12
+      bn.rshi w0, w31, w0 >> 16
     endloop
-    ret
+    bn.lid       x0, 0(x10++)
+    bn.addvm.16h w0, w0, w31
+    loopi 5, 2
+      bn.rshi w1, w0, w1 >> 12
+      bn.rshi w0, w31, w0 >> 16
+    endloop
+    bn.rshi w1, w0, w1 >> 4
+    bn.rshi w0, w31, w0 >> 4
+    bn.sid  x4, 0(x11++)
+
+    bn.rshi w1, w0, w1 >> 8
+    bn.rshi w0, w31, w0  >> 12
+    loopi 10, 2
+      bn.rshi w1, w0, w1 >> 12
+      bn.rshi w0, w31, w0 >> 16
+    endloop
+    bn.lid       x0, 0(x10++)
+    bn.addvm.16h w0, w0, w31
+    loopi 10, 2
+      bn.rshi w1, w0, w1 >> 12
+      bn.rshi w0, w31, w0 >> 16
+    endloop
+    bn.rshi w1, w0, w1 >> 8
+    bn.rshi w0, w31, w0 >> 8
+    bn.sid  x4, 0(x11++)
+
+    bn.rshi w1, w0, w1 >> 4
+    bn.rshi w0, w31, w0 >> 8
+    loopi 5, 2
+      bn.rshi w1, w0, w1 >> 12
+      bn.rshi w0, w31, w0 >> 16
+    endloop
+    bn.lid       x0, 0(x10++)
+    bn.addvm.16h w0, w0, w31
+    loopi 16, 2
+      bn.rshi w1, w0, w1 >> 12
+      bn.rshi w0, w31, w0 >> 16
+    endloop
+    bn.sid x4, 0(x11++)
+  endloop
+  ret
 
 /*
  * Name: poly_frombytes
@@ -93,56 +93,56 @@ poly_tobytes:
 .globl poly_frombytes
 .type poly_frombytes, @function
 poly_frombytes:
-    la     x5, const_0x0fff
-    addi   x4, x0, 2
-    bn.lid x4, 0(x5)
-    addi   x4, x0, 1
+  la     x5, const_0x0fff
+  addi   x4, x0, 2
+  bn.lid x4, 0(x5)
+  addi   x4, x0, 1
 
-    loopi 4, 35
-        bn.lid x0, 0(x10++)
+  loopi 4, 35
+    bn.lid x0, 0(x10++)
 
-        loopi 16, 2
-            bn.rshi w1, w0, w1 >> 16
-            bn.rshi w0, w0, w0 >> 12
-        endloop
-        bn.and w1, w1, w2
-        bn.sid x4, 0(x11++)
+    loopi 16, 2
+      bn.rshi w1, w0, w1 >> 16
+      bn.rshi w0, w0, w0 >> 12
+    endloop
+    bn.and w1, w1, w2
+    bn.sid x4, 0(x11++)
 
-        loopi 5, 2
-            bn.rshi w1, w0, w1 >> 16
-            bn.rshi w0, w0, w0 >> 12
-        endloop
-        bn.rshi w1, w0, w1 >> 4
-        bn.lid  x0, 0(x10++)
-        bn.rshi w1, w0, w1 >> 12
-        bn.rshi w0, w0, w0 >> 8
-        loopi 10, 2
-            bn.rshi w1, w0, w1 >> 16
-            bn.rshi w0, w0, w0 >> 12
-        endloop
-        bn.and w1, w1, w2
-        bn.sid x4, 0(x11++)
+    loopi 5, 2
+      bn.rshi w1, w0, w1 >> 16
+      bn.rshi w0, w0, w0 >> 12
+    endloop
+    bn.rshi w1, w0, w1 >> 4
+    bn.lid  x0, 0(x10++)
+    bn.rshi w1, w0, w1 >> 12
+    bn.rshi w0, w0, w0 >> 8
+    loopi 10, 2
+      bn.rshi w1, w0, w1 >> 16
+      bn.rshi w0, w0, w0 >> 12
+    endloop
+    bn.and w1, w1, w2
+    bn.sid x4, 0(x11++)
 
-        loopi 10, 2
-            bn.rshi w1, w0, w1 >> 16
-            bn.rshi w0, w0, w0 >> 12
-        endloop
-        bn.rshi w1, w0, w1 >> 8
-        bn.lid  x0, 0(x10++)
-        bn.rshi w1, w0, w1 >> 8
-        bn.rshi w0, w0, w0 >> 4
-        loopi 5, 2
-            bn.rshi w1, w0, w1 >> 16
-            bn.rshi w0, w0, w0 >> 12
-        endloop
-        bn.and w1, w1, w2
-        bn.sid x4, 0(x11++)
+    loopi 10, 2
+      bn.rshi w1, w0, w1 >> 16
+      bn.rshi w0, w0, w0 >> 12
+    endloop
+    bn.rshi w1, w0, w1 >> 8
+    bn.lid  x0, 0(x10++)
+    bn.rshi w1, w0, w1 >> 8
+    bn.rshi w0, w0, w0 >> 4
+    loopi 5, 2
+      bn.rshi w1, w0, w1 >> 16
+      bn.rshi w0, w0, w0 >> 12
+    endloop
+    bn.and w1, w1, w2
+    bn.sid x4, 0(x11++)
 
-        loopi 16, 2
-            bn.rshi w1, w0, w1 >> 16
-            bn.rshi w0, w0, w0 >> 12
-        endloop
-        bn.and w1, w1, w2
-        bn.sid x4, 0(x11++)
+    loopi 16, 2
+      bn.rshi w1, w0, w1 >> 16
+      bn.rshi w0, w0, w0 >> 12
+    endloop
+    bn.and w1, w1, w2
+    bn.sid x4, 0(x11++)
   endloop
   ret

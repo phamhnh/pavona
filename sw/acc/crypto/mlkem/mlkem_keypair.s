@@ -70,75 +70,75 @@
 .globl crypto_kem_keypair
 .type crypto_kem_keypair, @function
 crypto_kem_keypair:
-    /* Save addresses. */
-    la t0, dptr_coins
-    sw a0, 0(t0)
-    la t0, dptr_pk
-    sw a1, 0(t0)
-    la t0, k
-    sw a3, 0(t0)
+  /* Save addresses. */
+  la t0, dptr_coins
+  sw a0, 0(t0)
+  la t0, dptr_pk
+  sw a1, 0(t0)
+  la t0, k
+  sw a3, 0(t0)
 
 #ifdef HARDENED
-    /* Refresh the Boolean shares of seed d (coins + 0, coins + 32). */
-    addi s0, a0, 0
-    addi s1, a1, 0
-    addi s2, a2, 0
-    addi a1, x0, 1
-    addi a2, x0, 32
-    addi a4, a0, 0
-    jal  x1, refreshios
-    addi a0, s0, 0
-    addi a1, s1, 0
-    addi a2, s2, 0
+  /* Refresh the Boolean shares of seed d (coins + 0, coins + 32). */
+  addi s0, a0, 0
+  addi s1, a1, 0
+  addi s2, a2, 0
+  addi a1, x0, 1
+  addi a2, x0, 32
+  addi a4, a0, 0
+  jal  x1, refreshios
+  addi a0, s0, 0
+  addi a1, s1, 0
+  addi a2, s2, 0
 #endif
 
-    /*** indcpa_keypair ***/
-    jal  x1, indcpa_keypair
+  /*** indcpa_keypair ***/
+  jal  x1, indcpa_keypair
 
-    la   t0, k
-    lw   t0, 0(t0)
-    addi x4, x0, 2
-    beq  t0, x4, _pk_len_k2
-    addi x4, x0, 3
-    beq  t0, x4, _pk_len_k3
-    addi s0, x0, 1568
-    beq  x0, x0, _continue
+  la   t0, k
+  lw   t0, 0(t0)
+  addi x4, x0, 2
+  beq  t0, x4, _pk_len_k2
+  addi x4, x0, 3
+  beq  t0, x4, _pk_len_k3
+  addi s0, x0, 1568
+  beq  x0, x0, _continue
 _pk_len_k3:
-    addi s0, x0, 1184
-    beq  x0, x0, _continue
+  addi s0, x0, 1184
+  beq  x0, x0, _continue
 _pk_len_k2:
-    addi s0, x0, 800
+  addi s0, x0, 800
 
 _continue:
-    /* Copy pk to sk and compute H(pk). */
-    la      t0, dptr_pk
-    lw      a0, 0(t0)
-    slli    t0, s0, 5
-    addi    t0, t0, SHA3_256_CFG
-    csrrw   x0, kmac_cfg, t0
+  /* Copy pk to sk and compute H(pk). */
+  la      t0, dptr_pk
+  lw      a0, 0(t0)
+  slli    t0, s0, 5
+  addi    t0, t0, SHA3_256_CFG
+  csrrw   x0, kmac_cfg, t0
 
-    la      t1, dptr_sk
-    lw      t1, 0(t1)
-    srli    s0, s0, 5
-    loop s0, 3
-        bn.lid  x0, 0(a0++)
-        bn.sid  x0, 0(t1++)
-        bn.wsrw kmac_msg, w0
-    endloop
-    bn.wsrr w0, kmac_digest
+  la      t1, dptr_sk
+  lw      t1, 0(t1)
+  srli    s0, s0, 5
+  loop s0, 3
+    bn.lid  x0, 0(a0++)
     bn.sid  x0, 0(t1++)
+    bn.wsrw kmac_msg, w0
+  endloop
+  bn.wsrr w0, kmac_digest
+  bn.sid  x0, 0(t1++)
 
-    /* Copy z to sk. */
-    la     t0, dptr_coins
-    lw     t0, 0(t0)
+  /* Copy z to sk. */
+  la     t0, dptr_coins
+  lw     t0, 0(t0)
 #ifdef HARDENED
-    bn.lid x0, 64(t0)
-    bn.sid x0, 0(t1)
-    bn.xor w0, w0, w0 /* Whitening. */
-    bn.lid x0, 96(t0)
-    bn.sid x0, 32(t1)
+  bn.lid x0, 64(t0)
+  bn.sid x0, 0(t1)
+  bn.xor w0, w0, w0 /* Whitening. */
+  bn.lid x0, 96(t0)
+  bn.sid x0, 32(t1)
 #else
-    bn.lid x0, 32(t0)
-    bn.sid x0, 0(t1)
+  bn.lid x0, 32(t0)
+  bn.sid x0, 0(t1)
 #endif
-    ret
+  ret
