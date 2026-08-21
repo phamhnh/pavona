@@ -22,16 +22,20 @@
 /**
  * Key generation for the CCA-secure ML-KEM key encapsulation mechanism.
  *
- * Run indcpa_keypair on the seed d, then complete the secret key by appending
- * the public key, its hash H(pk) and the implicit-rejection seed z.
+ * Generates an encapsulation key and a corresponding decapsulation key.
  *
  * The seed buffer holds d || z, that is 2 * KYBER_SYMBYTES = 64 bytes. When
  * built with HARDENED, both halves are Boolean-shared into two shares each, so
- * the buffer holds d_0 || d_1 || z_0 || z_1 and is 128 bytes long instead.
+ * the buffer holds d_0 || d_1 || z_0 || z_1 and is 128 bytes long instead. The
+ * packed ek_pke is 384 * k + 32 bytes, that is 800, 1184 and 1568 bytes for
+ * k = 2, 3 and 4.
+ *  Step 1: ek_pke, dk_pke <- indcpa_keypair(d)
+ *  Step 2: append ek_pke to dk_pke, then append h = SHA3-256(ek_pke)
+ *  Step 3: append z, giving dk = dk_pke || ek_pke || h || z
  *
  * @param[in]  x10: dmem pointer to the input seed
- * @param[out] x11: dmem pointer to the output public key
- * @param[out] x12: dmem pointer to the output secret key
+ * @param[out] x11: dmem pointer to the output public key ek
+ * @param[out] x12: dmem pointer to the output secret key dk
  * @param[in]  x13: k, the security level
  *
  * UNPROTECTED
@@ -46,7 +50,6 @@
 .globl crypto_kem_keypair
 .type crypto_kem_keypair, @function
 crypto_kem_keypair:
-  /* Save addresses. */
   la x5, dptr_coins
   sw x10, 0(x5)
   la x5, dptr_pk
@@ -56,19 +59,20 @@ crypto_kem_keypair:
 
 #ifdef HARDENED
   /* Refresh the Boolean shares of seed d (coins + 0, coins + 32). */
-  addi x8, x10, 0
-  addi x9, x11, 0
-  addi x18, x12, 0
+  add  x8, x10, x0
+  add  x9, x11, x0
+  add  x18, x12, x0
   addi x11, x0, 1
   addi x12, x0, 32
-  addi x14, x10, 0
+  add  x14, x10, x0
   jal  x1, refreshios
-  addi x10, x8, 0
-  addi x11, x9, 0
-  addi x12, x18, 0
+  add  x10, x8, x0
+  add  x11, x9, x0
+  add  x12, x18, x0
 #endif
 
-  /*** indcpa_keypair ***/
+  /*** Step 1: ek_pke, dk_pke = indcpa_keypair(seed). ***/
+  /* x10 already points to seed. */
   jal  x1, indcpa_keypair
 
   la   x5, k
@@ -77,22 +81,25 @@ crypto_kem_keypair:
   beq  x5, x4, _pk_len_k2
   addi x4, x0, 3
   beq  x5, x4, _pk_len_k3
-  addi x8, x0, 1568
+  addi x8, x0, 1568 /* Byte length of ek_pke for k = 4. */
   beq  x0, x0, _continue
+
 _pk_len_k3:
-  addi x8, x0, 1184
+  addi x8, x0, 1184 /* Byte length of ek_pke for k = 3. */
   beq  x0, x0, _continue
+
 _pk_len_k2:
-  addi x8, x0, 800
+  addi x8, x0, 800 /* Byte length of ek_pke for k = 2. */
 
 _continue:
-  /* Copy pk to sk and compute H(pk). */
+  /*** Step 2: Append ek_pke to dk_pke and compute h = SHA3-256(ek_pke). ***/
+  /* Initialize SHA3-256 operation. */
   la      x5, dptr_pk
   lw      x10, 0(x5)
   slli    x5, x8, 5
   addi    x5, x5, SHA3_256_CFG
   csrrw   x0, kmac_cfg, x5
-
+  /* Copy ek_pke to dk_pke and send ek_pke to KMAC. */
   la      x6, dptr_sk
   lw      x6, 0(x6)
   srli    x8, x8, 5
@@ -101,10 +108,11 @@ _continue:
     bn.sid  x0, 0(x6++)
     bn.wsrw kmac_msg, w0
   endloop
+  /* Retrieve h = H(ek_pke). */
   bn.wsrr w0, kmac_digest
   bn.sid  x0, 0(x6++)
 
-  /* Copy z to sk. */
+  /*** Step 3: Append z to (dk_pke || ek_pke || h). ***/
   la     x5, dptr_coins
   lw     x5, 0(x5)
 #ifdef HARDENED
