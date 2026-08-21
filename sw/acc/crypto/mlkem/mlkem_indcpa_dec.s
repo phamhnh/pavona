@@ -18,38 +18,6 @@
 
 #define N_WDR 16
 
-/* Register aliases */
-.equ x2, sp
-.equ x3, fp
-.equ x5, t0
-.equ x6, t1
-.equ x7, t2
-.equ x8, s0
-.equ x9, s1
-.equ x10, a0
-.equ x11, a1
-.equ x12, a2
-.equ x13, a3
-.equ x14, a4
-.equ x15, a5
-.equ x16, a6
-.equ x17, a7
-.equ x18, s2
-.equ x19, s3
-.equ x20, s4
-.equ x21, s5
-.equ x22, s6
-.equ x23, s7
-.equ x24, s8
-.equ x25, s9
-.equ x26, s10
-.equ x27, s11
-.equ x28, t3
-.equ x29, t4
-.equ x30, t5
-.equ x31, t6
-
-
 /**
  * Decryption for the CPA-secure public-key encryption scheme underlying
  * ML-KEM.
@@ -78,115 +46,115 @@
 .globl indcpa_dec
 .type indcpa_dec, @function
 indcpa_dec:
-  /* Save fp to stack */
-  addi sp, sp, -32
-  sw   fp, 0(sp)
-  addi fp, sp, 0
+  /* Save x3 to stack */
+  addi x2, x2, -32
+  sw   x3, 0(x2)
+  addi x3, x2, 0
 
-  addi s0, a0, 0
-  addi s1, a1, 0
-  addi s2, a2, 0
-  addi s3, a3, 0
+  addi x8, x10, 0
+  addi x9, x11, 0
+  addi x18, x12, 0
+  addi x19, x13, 0
 
   /* Unpack sk and ct polynomial by polynomial. multiply them and accumulate
    * the result in m. */
-  la s5, mpoly_sk
-  la s6, poly_b
-  la s7, mpoly_m
-  la s8, twiddles_ntt
-  la s9, twiddles_basemul
+  la x21, mpoly_sk
+  la x22, poly_b
+  la x23, mpoly_m
+  la x24, twiddles_ntt
+  la x25, twiddles_basemul
 
 #ifndef HARDENED
   /* Unpack sk[0]. */
-  addi a0, s1, 0
-  addi a1, s5, 0 /* sk */
+  addi x10, x9, 0
+  addi x11, x21, 0 /* sk */
   jal  x1, poly_frombytes
-  addi s1, a0, 0 /* Save address of sk to be unpacked later. */
+  addi x9, x10, 0 /* Save address of sk to be unpacked later. */
 
   /* Unpack b.vec[0]. */
   bn.wsrr   w16, mod /* w16 = R | Q. */
-  addi      a0, s0, 0 /* ct */
-  addi      a1, s6, 0 /* b */
-  addi      a2, s3, 0 /* k */
+  addi      x10, x8, 0 /* ct */
+  addi      x11, x22, 0 /* b */
+  addi      x12, x19, 0 /* k */
   jal       x1, poly_polyvec_decompress
-  addi      s0, a0, 0 /* Save address of ct to be unpacked later. */
+  addi      x8, x10, 0 /* Save address of ct to be unpacked later. */
 
   /* Compute b = ntt(b). */
   bn.shv.16h w0, w16 << 1 /* w0 = 2*R | 2*Q */
   bn.wsrw    mod, w0 /* mod = 2*R | 2*Q */
-  addi       a0, s6, 0 /* b */
-  addi       a1, s8, 0 /* twiddles_ntt */
-  addi       a2, a0, 0
+  addi       x10, x22, 0 /* b */
+  addi       x11, x24, 0 /* twiddles_ntt */
+  addi       x12, x10, 0
   jal        x1, ntt
 
   /* Compute m = b * sk. */
-  addi a1, s5, 0 /* sk */
-  addi a2, s9, 0 /* twiddles_basemul */
-  addi a3, s7, 0 /* m */
-  addi a0, s6, 0 /* poly_b */
+  addi x11, x21, 0 /* sk */
+  addi x12, x25, 0 /* twiddles_basemul */
+  addi x13, x23, 0 /* m */
+  addi x10, x22, 0 /* poly_b */
   jal  x1, basemul
 
   /* Loop over j = 1,...,KYBER_K - 1. */
-  addi s3, s3, -1 /* k - 1 */
-  loop s3, 19
+  addi x19, x19, -1 /* k - 1 */
+  loop x19, 19
     /* Unpack sk.vec[j]. */
-    addi a0, s1, 0 /* sk.vec[j]. */
-    addi a1, s5, 0 /* sk */
+    addi x10, x9, 0 /* sk.vec[j]. */
+    addi x11, x21, 0 /* sk */
     jal  x1, poly_frombytes
-    addi s1, a0, 0 /* Save address of sk.vec[j + 1] to be unpacked later. */
+    addi x9, x10, 0 /* Save address of sk.vec[j + 1] to be unpacked later. */
 
     /* Unpack b.vec[j]. */
     /* w16 is still R | Q and mod is still 2*R | 2*Q. */
-    addi a0, s0, 0 /* ct */
-    addi a1, s6, 0 /* b */
-    addi a2, s3, 1 /* k */
+    addi x10, x8, 0 /* ct */
+    addi x11, x22, 0 /* b */
+    addi x12, x19, 1 /* k */
     jal  x1, poly_polyvec_decompress
-    addi s0, a0, 0 /* Save address of ct to be unpacked later. */
+    addi x8, x10, 0 /* Save address of ct to be unpacked later. */
 
     /* Compute b = ntt(b). */
     /* w16 is still R | Q and mod is still 2*R | 2*Q. */
-    addi a0, s6, 0 /* b */
-    addi a1, s8, 0 /* twiddles_ntt */
-    addi a2, a0, 0
+    addi x10, x22, 0 /* b */
+    addi x11, x24, 0 /* twiddles_ntt */
+    addi x12, x10, 0
     jal  x1, ntt
 
     /* Compute m += b * sk. */
     /* w16 is still R | Q and mod is still 2*R | 2*Q. */
-    addi a0, s6, 0 /* b */
-    addi a1, s5, 0 /* sk */
-    addi a2, s9, 0 /* twiddles_basemul */
-    addi a3, s7, 0 /* m */
+    addi x10, x22, 0 /* b */
+    addi x11, x21, 0 /* sk */
+    addi x12, x25, 0 /* twiddles_basemul */
+    addi x13, x23, 0 /* m */
     jal  x1, basemul_acc
     nop
   endloop
 
   /* Compute m = intt(m). */
-  addi    a0, s7, 0 /* m */
-  la      a1, twiddles_intt
-  addi    a2, a0, 0
+  addi    x10, x23, 0 /* m */
+  la      x11, twiddles_intt
+  addi    x12, x10, 0
   jal     x1, intt
   bn.wsrw mod, w16 /* Restore mod = R | Q */
 
   /* Unpack v. */
-  addi a0, s0, 0 /* ct */
-  la   a1, poly_v
-  addi a2, s3, 1 /* k */
+  addi x10, x8, 0 /* ct */
+  la   x11, poly_v
+  addi x12, x19, 1 /* k */
   jal  x1, poly_decompress
 
   /* Compute m = v - m. */
-  la   a0, poly_v
-  la   a1, mpoly_m
-  addi a2, a1, 0
+  la   x10, poly_v
+  la   x11, mpoly_m
+  addi x12, x11, 0
   jal  x1, poly_sub
 
   /* Compute r = poly_tomsg(m). */
-  la   a0, mpoly_m
-  addi a1, s2, 0 /* ptr_m */
+  la   x10, mpoly_m
+  addi x11, x18, 0 /* ptr_m */
   jal  x1, poly_tomsg
 #else
   /* Unpack sk[0]. */
-  addi a0, s1, 0
-  addi a1, s5, 0 /* sk */
+  addi x10, x9, 0
+  addi x11, x21, 0 /* sk */
   loopi NSHARES, 4
     /* Whitening. */
     bn.xor  w0, w0, w0
@@ -194,46 +162,46 @@ indcpa_dec:
     jal     x1, poly_frombytes
     nop
   endloop
-  addi s1, a0, 0 /* Save address of sk to be unpacked later. */
+  addi x9, x10, 0 /* Save address of sk to be unpacked later. */
 
   /* Refresh sk[0] arithmetic shares (MOD = R | Q here). */
   bn.wsrr w16, mod /* w16 = R | Q. */
-  addi    a0, s5, 0
-  addi    a2, s5, 0
+  addi    x10, x21, 0
+  addi    x12, x21, 0
   jal     x1, refreshmodq
 
   /* Unpack b.vec[0]. */
-  addi      a0, s0, 0 /* ct */
-  addi      a1, s6, 0 /* b */
-  addi      a2, s3, 0 /* k */
+  addi      x10, x8, 0 /* ct */
+  addi      x11, x22, 0 /* b */
+  addi      x12, x19, 0 /* k */
   jal       x1, poly_polyvec_decompress
-  addi      s0, a0, 0 /* Save address of ct to be unpacked later. */
+  addi      x8, x10, 0 /* Save address of ct to be unpacked later. */
 
   /* Compute b = ntt(b). */
   bn.shv.16h w0, w16 << 1 /* w0 = 2*R | 2*Q */
   bn.wsrw    mod, w0 /* mod = 2*R | 2*Q */
-  addi       a0, s6, 0 /* b */
-  addi       a1, s8, 0 /* twiddles_ntt */
-  addi       a2, a0, 0
+  addi       x10, x22, 0 /* b */
+  addi       x11, x24, 0 /* twiddles_ntt */
+  addi       x12, x10, 0
   jal        x1, ntt
 
   /* Compute m = b * sk. */
-  addi a1, s5, 0 /* sk */
-  addi a2, s9, 0 /* twiddles_basemul */
-  addi a3, s7, 0 /* m */
+  addi x11, x21, 0 /* sk */
+  addi x12, x25, 0 /* twiddles_basemul */
+  addi x13, x23, 0 /* m */
   loopi NSHARES, 4
     jal  x1, whitening
-    addi a0, s6, 0 /* poly_b */
+    addi x10, x22, 0 /* poly_b */
     jal  x1, basemul
     nop
   endloop
 
   /* Loop over j = 1,...,KYBER_K - 1. */
-  addi s3, s3, -1 /* k - 1 */
-  loop s3, 32
+  addi x19, x19, -1 /* k - 1 */
+  loop x19, 32
     /* Unpack sk.vec[j]. */
-    addi a0, s1, 0 /* sk.vec[j]. */
-    addi a1, s5, 0 /* sk */
+    addi x10, x9, 0 /* sk.vec[j]. */
+    addi x11, x21, 0 /* sk */
     loopi NSHARES, 4
       /* Whitening. */
       bn.xor w0, w0, w0
@@ -241,39 +209,39 @@ indcpa_dec:
       jal    x1, poly_frombytes
       nop
     endloop
-    addi s1, a0, 0 /* Save address of sk.vec[j + 1] to be unpacked later. */
+    addi x9, x10, 0 /* Save address of sk.vec[j + 1] to be unpacked later. */
 
     /* Refresh sk.vec[j] arithmetic shares. */
     bn.wsrw    mod, w16 /* MOD = R | Q. */
-    addi       a0, s5, 0
-    addi       a2, s5, 0
+    addi       x10, x21, 0
+    addi       x12, x21, 0
     jal        x1, refreshmodq
     bn.shv.16h w0, w16 << 1
     bn.wsrw    mod, w0 /* MOD = 2*R | 2*Q. */
 
     /* Unpack b.vec[j]. */
     /* w16 is still R | Q and mod is still 2*R | 2*Q. */
-    addi a0, s0, 0 /* ct */
-    addi a1, s6, 0 /* b */
-    addi a2, s3, 1 /* k */
+    addi x10, x8, 0 /* ct */
+    addi x11, x22, 0 /* b */
+    addi x12, x19, 1 /* k */
     jal  x1, poly_polyvec_decompress
-    addi s0, a0, 0 /* Save address of ct to be unpacked later. */
+    addi x8, x10, 0 /* Save address of ct to be unpacked later. */
 
     /* Compute b = ntt(b). */
     /* w16 is still R | Q and mod is still 2*R | 2*Q. */
-    addi a0, s6, 0 /* b */
-    addi a1, s8, 0 /* twiddles_ntt */
-    addi a2, a0, 0
+    addi x10, x22, 0 /* b */
+    addi x11, x24, 0 /* twiddles_ntt */
+    addi x12, x10, 0
     jal  x1, ntt
 
     /* Compute m += b * sk. */
-    addi a1, s5, 0 /* sk */
-    addi a2, s9, 0 /* twiddles_basemul */
+    addi x11, x21, 0 /* sk */
+    addi x12, x25, 0 /* twiddles_basemul */
     /* w16 is still R | Q and mod is still 2*R | 2*Q. */
-    addi a3, s7, 0 /* m */
+    addi x13, x23, 0 /* m */
     loopi NSHARES, 4
       jal  x1, whitening
-      addi a0, s6, 0 /* b */
+      addi x10, x22, 0 /* b */
       jal  x1, basemul_acc
       nop
     endloop
@@ -281,9 +249,9 @@ indcpa_dec:
   endloop
 
   /* Compute m = intt(m). */
-  addi a0, s7, 0 /* m */
-  la   a1, twiddles_intt
-  addi a2, a0, 0
+  addi x10, x23, 0 /* m */
+  la   x11, twiddles_intt
+  addi x12, x10, 0
   loopi NSHARES, 3
     jal x1, whitening
     jal x1, intt
@@ -292,39 +260,39 @@ indcpa_dec:
   bn.wsrw mod, w16 /* Restore mod = R | Q */
 
   /* Unpack v. */
-  addi a0, s0, 0 /* ct */
-  la   a1, poly_v
-  addi a2, s3, 1 /* k */
+  addi x10, x8, 0 /* ct */
+  la   x11, poly_v
+  addi x12, x19, 1 /* k */
   jal  x1, poly_decompress
 
   /* Compute m = v - m. */
-  la   a0, poly_v
-  la   a1, mpoly_m
-  addi a2, a1, 0
+  la   x10, poly_v
+  la   x11, mpoly_m
+  addi x12, x11, 0
   jal  x1, poly_sub
 
-  addi   t0, x0, NSHARES
-  addi   t0, t0, -1 /* t0 = nshares - 1. */
+  addi   x5, x0, NSHARES
+  addi   x5, x5, -1 /* x5 = nshares - 1. */
   bn.xor w0, w0, w0
-  loop t0, 5
+  loop x5, 5
     loopi N_WDR, 3
-      bn.lid       x0, 0(a1)
+      bn.lid       x0, 0(x11)
       bn.subvm.16h w0, w31, w0
-      bn.sid       x0, 0(a1++)
+      bn.sid       x0, 0(x11++)
     endloop
     /* Whitening. */
     bn.xor w0, w0, w0
   endloop
 
   /* Compute r = masked_poly_tomsg(m). */
-  la   a0, mpoly_m
-  addi a2, s2, 0 /* ptr_m */
+  la   x10, mpoly_m
+  addi x12, x18, 0 /* ptr_m */
   jal  x1, masked_poly_tomsg
 
 #endif
 
-  /* Restore sp and fp. */
-  addi sp, fp, 0
-  lw   fp, 0(sp)
-  addi sp, sp, 32
+  /* Restore x2 and x3. */
+  addi x2, x3, 0
+  lw   x3, 0(x2)
+  addi x2, x2, 32
   ret

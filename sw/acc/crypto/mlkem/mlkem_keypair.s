@@ -16,38 +16,6 @@
 #define NSHARES 1
 #endif
 
-/* Register aliases */
-.equ x2, sp
-.equ x3, fp
-.equ x5, t0
-.equ x6, t1
-.equ x7, t2
-.equ x8, s0
-.equ x9, s1
-.equ x10, a0
-.equ x11, a1
-.equ x12, a2
-.equ x13, a3
-.equ x14, a4
-.equ x15, a5
-.equ x16, a6
-.equ x17, a7
-.equ x18, s2
-.equ x19, s3
-.equ x20, s4
-.equ x21, s5
-.equ x22, s6
-.equ x23, s7
-.equ x24, s8
-.equ x25, s9
-.equ x26, s10
-.equ x27, s11
-.equ x28, t3
-.equ x29, t4
-.equ x30, t5
-.equ x31, t6
-
-
 /* Config to start a SHA3_256 operation. */
 #define SHA3_256_CFG 0x8
 
@@ -79,74 +47,74 @@
 .type crypto_kem_keypair, @function
 crypto_kem_keypair:
   /* Save addresses. */
-  la t0, dptr_coins
-  sw a0, 0(t0)
-  la t0, dptr_pk
-  sw a1, 0(t0)
-  la t0, k
-  sw a3, 0(t0)
+  la x5, dptr_coins
+  sw x10, 0(x5)
+  la x5, dptr_pk
+  sw x11, 0(x5)
+  la x5, k
+  sw x13, 0(x5)
 
 #ifdef HARDENED
   /* Refresh the Boolean shares of seed d (coins + 0, coins + 32). */
-  addi s0, a0, 0
-  addi s1, a1, 0
-  addi s2, a2, 0
-  addi a1, x0, 1
-  addi a2, x0, 32
-  addi a4, a0, 0
+  addi x8, x10, 0
+  addi x9, x11, 0
+  addi x18, x12, 0
+  addi x11, x0, 1
+  addi x12, x0, 32
+  addi x14, x10, 0
   jal  x1, refreshios
-  addi a0, s0, 0
-  addi a1, s1, 0
-  addi a2, s2, 0
+  addi x10, x8, 0
+  addi x11, x9, 0
+  addi x12, x18, 0
 #endif
 
   /*** indcpa_keypair ***/
   jal  x1, indcpa_keypair
 
-  la   t0, k
-  lw   t0, 0(t0)
+  la   x5, k
+  lw   x5, 0(x5)
   addi x4, x0, 2
-  beq  t0, x4, _pk_len_k2
+  beq  x5, x4, _pk_len_k2
   addi x4, x0, 3
-  beq  t0, x4, _pk_len_k3
-  addi s0, x0, 1568
+  beq  x5, x4, _pk_len_k3
+  addi x8, x0, 1568
   beq  x0, x0, _continue
 _pk_len_k3:
-  addi s0, x0, 1184
+  addi x8, x0, 1184
   beq  x0, x0, _continue
 _pk_len_k2:
-  addi s0, x0, 800
+  addi x8, x0, 800
 
 _continue:
   /* Copy pk to sk and compute H(pk). */
-  la      t0, dptr_pk
-  lw      a0, 0(t0)
-  slli    t0, s0, 5
-  addi    t0, t0, SHA3_256_CFG
-  csrrw   x0, kmac_cfg, t0
+  la      x5, dptr_pk
+  lw      x10, 0(x5)
+  slli    x5, x8, 5
+  addi    x5, x5, SHA3_256_CFG
+  csrrw   x0, kmac_cfg, x5
 
-  la      t1, dptr_sk
-  lw      t1, 0(t1)
-  srli    s0, s0, 5
-  loop s0, 3
-    bn.lid  x0, 0(a0++)
-    bn.sid  x0, 0(t1++)
+  la      x6, dptr_sk
+  lw      x6, 0(x6)
+  srli    x8, x8, 5
+  loop x8, 3
+    bn.lid  x0, 0(x10++)
+    bn.sid  x0, 0(x6++)
     bn.wsrw kmac_msg, w0
   endloop
   bn.wsrr w0, kmac_digest
-  bn.sid  x0, 0(t1++)
+  bn.sid  x0, 0(x6++)
 
   /* Copy z to sk. */
-  la     t0, dptr_coins
-  lw     t0, 0(t0)
+  la     x5, dptr_coins
+  lw     x5, 0(x5)
 #ifdef HARDENED
-  bn.lid x0, 64(t0)
-  bn.sid x0, 0(t1)
+  bn.lid x0, 64(x5)
+  bn.sid x0, 0(x6)
   bn.xor w0, w0, w0 /* Whitening. */
-  bn.lid x0, 96(t0)
-  bn.sid x0, 32(t1)
+  bn.lid x0, 96(x5)
+  bn.sid x0, 32(x6)
 #else
-  bn.lid x0, 32(t0)
-  bn.sid x0, 0(t1)
+  bn.lid x0, 32(x5)
+  bn.sid x0, 0(x6)
 #endif
   ret

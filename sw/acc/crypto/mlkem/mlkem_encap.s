@@ -10,38 +10,6 @@
 
 .text
 
-/* Register aliases */
-.equ x2, sp
-.equ x3, fp
-.equ x5, t0
-.equ x6, t1
-.equ x7, t2
-.equ x8, s0
-.equ x9, s1
-.equ x10, a0
-.equ x11, a1
-.equ x12, a2
-.equ x13, a3
-.equ x14, a4
-.equ x15, a5
-.equ x16, a6
-.equ x17, a7
-.equ x18, s2
-.equ x19, s3
-.equ x20, s4
-.equ x21, s5
-.equ x22, s6
-.equ x23, s7
-.equ x24, s8
-.equ x25, s9
-.equ x26, s10
-.equ x27, s11
-.equ x28, t3
-.equ x29, t4
-.equ x30, t5
-.equ x31, t6
-
-
 /* Config to start a SHA3_256 operation. */
 #define SHA3_256_CFG 0x8
 /* Config to start a SHA3_512 operation. */
@@ -71,57 +39,57 @@
 .type crypto_kem_enc, @function
 crypto_kem_enc:
   addi x4, x0, 2
-  beq  a4, x4, _pk_len_k2
+  beq  x14, x4, _pk_len_k2
   addi x4, x0, 3
-  beq  a4, x4, _pk_len_k3
-  addi t0, x0, 1568
+  beq  x14, x4, _pk_len_k3
+  addi x5, x0, 1568
   beq  x0, x0, _continue
 _pk_len_k3:
-  addi t0, x0, 1184
+  addi x5, x0, 1184
   beq  x0, x0, _continue
 _pk_len_k2:
-  addi t0, x0, 800
+  addi x5, x0, 800
 
 _continue:
   /* Save input addresses. */
-  add s0, a0, x0
-  add s1, a1, x0
+  add x8, x10, x0
+  add x9, x11, x0
 
   /* Compute H(pk). */
-  slli    t1, t0, 5
-  addi    t1, t1, SHA3_256_CFG
-  csrrw   x0, kmac_cfg, t1
-  srli    t0, t0, 5
-  loop t0, 2
-    bn.lid  x0, 0(a1++)
+  slli    x6, x5, 5
+  addi    x6, x6, SHA3_256_CFG
+  csrrw   x0, kmac_cfg, x6
+  srli    x5, x5, 5
+  loop x5, 2
+    bn.lid  x0, 0(x11++)
     bn.wsrw kmac_msg, w0
   endloop
   bn.wsrr w1, kmac_digest
 
   /* Compute hash_g(coins||H(pk)). ***/
-  addi  t0, x0, 64
-  slli  t0, t0, 5
-  addi  t0, t0, SHA3_512_CFG
-  csrrw x0, kmac_cfg, t0
+  addi  x5, x0, 64
+  slli  x5, x5, 5
+  addi  x5, x5, SHA3_512_CFG
+  csrrw x0, kmac_cfg, x5
 
   /* Send the message. */
-  bn.lid  x0, 0(s0)
+  bn.lid  x0, 0(x8)
   bn.wsrw kmac_msg, w0
   bn.wsrw kmac_msg, w1
 
   /* Read the digest. */
   bn.wsrr w0, kmac_digest
-  bn.sid  x0, 0(a3)
-  la      t0, indcpa_enc_seed
+  bn.sid  x0, 0(x13)
+  la      x5, indcpa_enc_seed
   bn.wsrr w0, kmac_digest
-  bn.sid  x0, 0(t0)
+  bn.sid  x0, 0(x5)
 
   /*** indcpa_enc ***/
-  add  a0, s0, x0 /* coins */
-  add  a1, s1, x0 /* pk */
-  add  a3, a2, x0 /* ct */
-  la   a2, indcpa_enc_seed
-  /* a4 is still k. */
+  add  x10, x8, x0 /* coins */
+  add  x11, x9, x0 /* pk */
+  add  x13, x12, x0 /* ct */
+  la   x12, indcpa_enc_seed
+  /* x14 is still k. */
   jal  x1, indcpa_enc
 
   ret
