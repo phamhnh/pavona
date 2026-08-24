@@ -43,13 +43,19 @@ poly_compress:
   addi   x4, x0, 5
   bn.lid x4, 0(x5) /* w5 = const_1290167 */
 
-  addi x4, x0, 4
-  beq  x12, x4, _handle_k4_poly_compress
-
-_handle_kn4_poly_compress:
-  /* Multiply the constant 80635 with 2**4 so that later we shift to the right
-   * 32 bits instead of 28 bits. This means we can return the high parts of
-   * the 64-bit products within the multiplication instruction. */
+  /* The compression of a is done as follows:
+   *    ((((a << d) + m) * c) >> (32 - d)) & ((1 << d) - 1)
+   * where:
+   *    d = 4 for k in {2, 3} and d = 5 for k = 4,
+   *    m = 1665 for k in {2, 3} and m = 1664 for k = 4,
+   *    c = 80365 for k in {2, 3} and c = 40318 for k = 4.
+   *
+   * To combine the multiplications with c and the right shift by (32 - d) bits,
+   * we pre-multiply c with 2**d so that the right shift will be by 32 bits
+   * instead. This means it is equivalent to taking the high 32-bit part of the
+   * 64-bit multiplication product. */
+  addi    x4, x0, 4
+  beq     x12, x4, _handle_k4_poly_compress
   bn.mov  w30, w16
   bn.subi w16, w5, 7 /* w16 = 80635 * 16 = 1290160 */
 
@@ -80,11 +86,8 @@ _handle_kn4_poly_compress:
 _handle_k4_poly_compress:
   bn.shv.8s w3, w2 >> 17 /* w3 = (0x340)^8 */
   bn.shv.8s w3, w3 << 1  /* w3 = (0x680)^8 */
-  /* Multiply the constant 40318 with 2**5 (1290176) so that later we shift to the
-   * right 32 bits instead of 28 bits. This means we can return the high parts of
-   * the 64-bit products within the multiplication instruction. */
-  bn.mov  w30, w16
-  bn.addi w16, w5, 9 /* w16 = 1290176 */
+  bn.mov    w30, w16
+  bn.addi   w16, w5, 9 /* w16 = 1290176 */
 
   /* 1 */
   loopi 3, 6
@@ -258,10 +261,8 @@ poly_polyvec_compress:
   addi   x4, x0, 5
   bn.lid x4, 0(x5) /* w5 = const_1290167 */
 
-  addi x4, x0, 4
-  beq  x12, x4, _handle_k4_poly_polyvec_compress
-
-_handle_kn4_poly_polyvec_compress:
+  addi      x4, x0, 4
+  beq       x12, x4, _handle_k4_poly_polyvec_compress
   bn.shv.8s w3, w2 >> 16 /* w3 = (0x681)^8 */
   bn.mov    w30, w16
   bn.mov    w16, w5      /* w16 = (1290167) */
@@ -357,9 +358,14 @@ _handle_kn4_poly_polyvec_compress:
 _handle_k4_poly_polyvec_compress:
   bn.shv.8s w3, w2 >> 17 /* w3 = (0x340)^8 */
   bn.shv.8s w3, w3 << 1  /* w3 = (0x680)^8 */
-  /* Multiply the constant 645084 with 2 (1290168) so that later we shift to the
-   * right 32 bits instead of 28 bits. This means we can return the high parts of
-   * the 64-bit products within the multiplication instruction. */
+  /* The compression of a is done as follows:
+   *    ((((a << d) + m) * c) >> (42 - d)) & ((1 << d) - 1)
+   * where d = 11, m = 1664, c = 645084 for k = 4.
+   *
+   * To combine the multiplications with c and the right shift by (42 - d) bits,
+   * we pre-multiply c with 2 so that the right shift will be by 32 bits
+   * instead. This means it is equivalent to taking the high 32-bit part of the
+   * 64-bit multiplication product. */
   bn.mov  w30, w16
   bn.addi w16, w5, 1 /* w16 = 1290168 */
 

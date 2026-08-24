@@ -68,17 +68,21 @@ _handle_kn4_poly_decompress:
   ret
 
 _handle_k4_poly_decompress:
-  /* Before, we used bn.mulv.l.8s.{even,odd}.lo to compute 16 16x16-bit
-   * multiplications, because we need the full 32-bit results to shift them by
-   * a certain number of bits. The computation is:
-   * (((a & mask_num_bits) * KYBER_Q) + const) >> num_bits
-   * To use compute 16 16x16-bit multiplications and adding with const at once,
-   * we do the following trick:
-   * ((((a*mask_num_bits)<<(16-num_bits))* KYBER_Q)+(const<<(16-num_bits)))>>16
-   * The addition is the accumulation to ACC(H), so we need to write
-   * (const<<(16-num_bits)) to ACC(H) before the multiplication. The final shift
-   * to the right 16 bits is taking the high parts of the multiplication
-   * results. All of this can be done in bn.mulv.l.16h.acc.hi. */
+  /* The decompression of a is done as follows:
+   *    (((a & m) * q) + c) >> d
+   * where:
+   *    d = 4 for k in {2, 3} and d = 5 for k = 4,
+   *    m = (1 << d) - 1,
+   *    c = 8 for k in {2, 3} and c = 16 for k = 4.
+   *
+   * To combine 16 16x16-bit multiplications with q and addition with c,
+   * let t = 16 - d and we do:
+   *    ((((a & m) << t) * q) + (c << t)) >> 16
+   *
+   * The addition is the accumulation to acc(h), so we need to write
+   * (c << (16 - d)) to acc(h) before the multiplication with q. The final
+   * right shift by 16 bits is taking the high 16-bit part of the 32-bit
+   * multiplication product. All of this can be done with one bn.mulv.l.16h.acc.hi. */
   addi   x4, x0, 1
   bn.lid x0, 0(x10++)
   loopi 3, 5
@@ -243,17 +247,21 @@ poly_polyvec_decompress:
   la        x5, const_0x0fff
   bn.lid    x4++, 0(x5)
 
-  /* Before, we used bn.mulv.l.8s.{even,odd}.lo to compute 16 16x16-bit
-   * multiplications, because we need the full 32-bit results to shift them by
-   * a certain number of bits. The computation is:
-   * (((a & mask_num_bits) * KYBER_Q) + const) >> num_bits
-   * To use compute 16 16x16-bit multiplications and adding with const at once,
-   * we do the following trick:
-   * ((((a*mask_num_bits)<<(16-num_bits))* KYBER_Q)+(const<<(16-num_bits)))>>16
-   * The addition is the accumulation to ACC(H), so we need to write
-   * (const<<(16-num_bits)) to ACC(H) before the multiplication. The final shift
-   * to the right 16 bits is taking the high parts of the multiplication
-   * results. All of this can be done in bn.mulv.l.16h.acc.hi. */
+  /* The decompression of a is done as follows:
+   *    (((a & m) * q) + c) >> d
+   * where:
+   *    d = 10 for k in {2, 3} and d = 11 for k = 4,
+   *    m = (1 << d) - 1,
+   *    c = 512 for k in {2, 3} and c = 1024 for k = 4.
+   *
+   * To combine 16 16x16-bit multiplications with q and addition with c,
+   * let t = 16 - d and we do:
+   *    ((((a & m) << t) * q) + (c << t)) >> 16
+   *
+   * The addition is the accumulation to acc(h), so we need to write
+   * (c << (16 - d)) to acc(h) before the multiplication with q. The final
+   * right shift by 16 bits is taking the high 16-bit part of the 32-bit
+   * multiplication product. All of this can be done with one bn.mulv.l.16h.acc.hi. */
   beq  x12, x4, _handle_k4_polyvec_decompress
 
 _handle_kn4_polyvec_decompress:
