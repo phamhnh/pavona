@@ -15,7 +15,7 @@
 .data
 .balign 32
 
-/* Modulus: KYBER_Q = 3329 */
+/* q = 3329. */
 .globl modulus
 modulus:
   .word 0x00000d01
@@ -27,6 +27,7 @@ modulus:
   .word 0x00000000
   .word 0x00000000
 
+/* qinv = -q^-1 mod 2^16 = 3327. */
 .globl modulus_inv
 modulus_inv:
   .word 0x00000cff
@@ -38,6 +39,7 @@ modulus_inv:
   .word 0x00000000
   .word 0x00000000
 
+/* q = 3329 in every 16-bit slot. */
 .globl modulus_bn
 modulus_bn:
   .word 0x0d010d01
@@ -49,6 +51,7 @@ modulus_bn:
   .word 0x0d010d01
   .word 0x0d010d01
 
+/* (q + 1) / 2 = 1665. */
 .globl modulus_over_2
 modulus_over_2:
   .word 0x06810681
@@ -60,7 +63,7 @@ modulus_over_2:
   .word 0x06810681
   .word 0x06810681
 
-/* ((Q + 1) / 2) * (2^16) % 3329. */
+/* ((q + 1) / 2) * (2^16) % q. */
 .globl modulus_over_2_m2_16
 modulus_over_2_m2_16:
   .word 0x0af70af7
@@ -72,6 +75,7 @@ modulus_over_2_m2_16:
   .word 0x0af70af7
   .word 0x0af70af7
 
+/* 19 * q. */
 .globl modulus_times_19
 modulus_times_19:
   .word 0xf713f713
@@ -83,6 +87,7 @@ modulus_times_19:
   .word 0xf713f713
   .word 0xf713f713
 
+/* 2^16 mod q. */
 .globl mont
 mont:
   .word 0x08ed08ed
@@ -127,9 +132,10 @@ const_8:
   .word 0x00080008
   .word 0x00080008
 
+/* 2^32 mod q. */
 .globl const_tomont
 const_tomont:
-  .word 0x05490549 /* 2^32 % KYBER_Q */
+  .word 0x05490549
   .word 0x05490549
   .word 0x05490549
   .word 0x05490549
@@ -138,6 +144,7 @@ const_tomont:
   .word 0x05490549
   .word 0x05490549
 
+/* ((1 << 40) + q // 2) // q. */
 .globl const_m_dv
 const_m_dv:
   .word 0x13afb768
@@ -149,6 +156,7 @@ const_m_dv:
   .word 0x13afb768
   .word 0x13afb768
 
+/* ((1 << 64) + q // 2) // q. */
 .globl const_m_du
 const_m_du:
   .word 0x680bb055
@@ -482,9 +490,8 @@ twiddles_intt:
   .half 0x05ed
   .half 0x0167
   /* Layer 1 */
-  .half 0x078c /* ((758*2^16) mod KYBER_Q)*(1/128) mod KYBER_Q */
-  /* [(2^32 mod KYBER_Q)*(1/128)] mod KYBER_Q */
-  .half 0x05a1
+  .half 0x078c /* ((758 * 2^16) mod q) * (1 / 128) mod q. */
+  .half 0x05a1 /* ((2^32 mod q) * (1 / 128)) mod q. */
 
 .globl twiddles_basemul
 twiddles_basemul:
