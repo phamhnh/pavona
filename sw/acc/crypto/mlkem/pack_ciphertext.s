@@ -87,7 +87,7 @@ _handle_k4_poly_compress:
   bn.shv.8s w3, w2 >> 17 /* w3 = (0x340)^8 */
   bn.shv.8s w3, w3 << 1  /* w3 = (0x680)^8 */
   bn.mov    w30, w16
-  bn.addi   w16, w5, 9 /* w16 = 1290176 */
+  bn.addi   w16, w5, 9   /* w16 = 1290176 */
 
   /* 1 */
   loopi 3, 6
