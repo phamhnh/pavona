@@ -14,58 +14,48 @@ NSHARES = 2
 Q = 3329
 
 
-def compress(x: int, d: int) -> int:
-    """Kyber coefficient compression to d bits."""
-    return (((x << d) + Q // 2) // Q) & ((1 << d) - 1)
+def frommsg(a: int, q: int) -> List[int]:
+    """Convert 32-byte message to polynomial."""
+    r = [0] * N
+    for i in range(N):
+        r[i] = (-((a >> i) & 1) & ((1 << 16) - 1)) & ((q + 1) // 2)
+    return r
 
 
-def bitslice_vec(x: List[int], k: int) -> bytes:
-    mask = (1 << N) - 1
-    # Generate 1 in 16 16-bit lanes.
-    vone = sum(1 << (lane * 16) for lane in range(16))
-
-    r = [0] * k
-    x_int = sum(x[coeff] << (coeff * 16) for coeff in range(N))
-    for _ in range(16):
-        t = x_int & mask
-        x_int >>= N
-        for bit in range(k):
-            r[bit] <<= 1
-            r[bit] |= (t & vone)
-            t >>= 1
-
-    r_bytes = bytes()
-    for bit in range(k):
-        r_bytes += int.to_bytes(r[bit], byteorder="little", length=32)
-    return r_bytes
-
-
-def gen_poly_hocompress_test(
+def gen_masked_poly_frommsg_test(
         seed: Optional[int],
         data_file: TextIO, exp_file: TextIO, dexp_file: TextIO):
     if seed is not None:
         random.seed(seed)
 
-    # Random arithmetic shares of x; r is their unmasked sum mod q.
-    x = [0] * N
-    r = [0] * N
+    # Random Boolean shares of the message; r is their unmasked XOR.
+    rt = 0
     x_bytes = bytes()
     for _ in range(NSHARES):
-        for coeff in range(N):
-            x[coeff] = random.randint(0, Q - 1)
-            r[coeff] = (r[coeff] + x[coeff]) % Q
-        x_int = sum(x[coeff] << (coeff * 16) for coeff in range(N))
-        x_bytes += int.to_bytes(x_int, byteorder="little", length=512)
+        x = random.getrandbits(N)
+        rt ^= x
+        x_bytes += int.to_bytes(x, byteorder="little", length=32)
 
-    # Reference compressions for both dv values (dv = 4 for k != 4, dv = 5 for
-    # k == 4); the gadget is exercised at both.
-    rv4 = bitslice_vec([compress(r[i], 4) for i in range(N)], 4)
-    rv5 = bitslice_vec([compress(r[i], 5) for i in range(N)], 5)
+    # Reference: undo the bitslice layout, then Decompress_q(m, 1).
+    r_int = 0
+    t = 1 << 15
+    v2_15 = sum(t << (lane * 16) for lane in range(16))
+    v2_15 &= (1 << N) - 1
+    for lane in range(16):
+        t = rt & v2_15
+        rt <<= 1
+        t >>= 15
+        for i in range(lane * 16, (lane + 1) * 16):
+            r_int |= ((t & 1) << i)
+            t >>= 16
+    r = frommsg(r_int, Q)
+    r_int = sum(r[coeff] << (coeff * 16) for coeff in range(N))
+    r_bytes = int.to_bytes(r_int, byteorder='little', length=512)
 
     # Write input values.
     inputs = {
-        'xa': x_bytes,
-        'rbv': int.to_bytes(0, byteorder='little', length=32 * 5 * NSHARES)
+        'xb': x_bytes,
+        'ra': int.to_bytes(0, byteorder='little', length=512 * NSHARES)
     }
     write_test_data(inputs, data_file)
 
@@ -73,7 +63,7 @@ def gen_poly_hocompress_test(
     write_test_exp({}, exp_file)
 
     # Write expected dmem values.
-    write_test_dexp({'rv4': rv4, 'rv5': rv5}, dexp_file)
+    write_test_dexp({'r': r_bytes}, dexp_file)
 
 
 if __name__ == '__main__':
@@ -97,4 +87,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     with args.data, args.exp, args.dexp:
-        gen_poly_hocompress_test(args.seed, args.data, args.exp, args.dexp)
+        gen_masked_poly_frommsg_test(args.seed, args.data, args.exp, args.dexp)
